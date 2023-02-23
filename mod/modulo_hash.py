@@ -1,20 +1,11 @@
-import hashlib
+from mod.files_to_bin import *
 
-def modulo_hash_file(file_path, modulus):
-    # Open the file in binary mode
-    with open(file_path, 'rb') as f:
-        # Read the file content
-        file_content = f.read()
-        # Create a new SHA-256 hash object
-        sha256 = hashlib.sha256()
-        # Update the hash object with the file content
-        sha256.update(file_content)
-        # Get the hexadecimal representation of the hash
-        file_hash = sha256.hexdigest()
-        # Convert the hash to an integer
-        int_hash = int(file_hash, 16)
-        # Convert the int to a binary
-        bin_val_hash = int(bin(int_hash)[2:])
-        # Apply the modulo operation to the hash
-        modulo_hash = bin_val_hash % modulus
+def modulo_hash_file(filepath, modulus):
+    file_bin = file_to_binary(filepath)
+    #print('file bin: ',file_bin)
+    #convert binary string to int
+    int_val = int(file_bin,2)
+    #print('int_val',int_val)
+    modulo_hash = int_val % modulus
+    #print('mod hash xx: ',modulo_hash)
     return modulo_hash
