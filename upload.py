@@ -12,7 +12,7 @@ user_input_folder_name = 'files/blocks/'
 user_output_folder_name = 'files/encrypt_blocks/'
 edge_input_folder_name = 'files/encrypt_blocks/'
 edge_output_folder_name = 'files/edge_encrypt_blocks/'
-file_meta = 'ieee.png'
+file_meta = 'test.txt'
 
 # RCE Key Generation
 key = get_rce_key() #change the RCE method to sarce
