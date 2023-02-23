@@ -12,11 +12,8 @@ user_input_folder_name = 'blocks/'
 user_output_folder_name = 'encrypt_blocks/'
 edge_input_folder_name = 'encrypt_blocks/'
 edge_output_folder_name = 'edge_encrypt_blocks/'
-metadata = 'iee.png'
+file_meta = 'ieee.png'
 
-down_edge_input_folder_name = 'edge_encrypt_blocks/'
-down_edge_output_folder_name = 'edge_decrypt_blocks/'
-down_user_output_folder_name = 'dencrypt_blocks/'
 # RCE Key Generation
 key = get_rce_key() #change the RCE method to sarce
 
@@ -24,7 +21,7 @@ output_folder = 'blocks'
 #print('\nRCE Key: '+str(key))
 
 #Chunking of Files
-file_count=divide_file_by_size('ieee.png', 1024, output_folder)
+file_count=divide_file_by_size(file_meta, 1024, output_folder)
 
 #i=0
 #MLE Keys for each block
@@ -54,7 +51,7 @@ for i in range (1,file_count):
 
 
 #Edge will encrypt each block again and save the Key in the edge node along with hash of the block
-edge_iv = b'xo\x1d[\xad\xc3\xc9;\xa3\xd40\x93_\xa9\xea\x19'
+edge_iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 edge_keys=[]
 for i in range (1,file_count):
     edge_bytes_K = get_random_bytes(32)
@@ -64,8 +61,9 @@ for i in range (1,file_count):
     file_path = edge_output_folder_name+file_name
     block_tag = modulo_hash_file(file_path,prime1)
     
+with open('cred.txt','x') as file:
+    file.write('cipher: {} \nedge_keys: {}'.format(cipher2,edge_keys))
 #Save the block tag in edge.
-print(edge_keys)
 
 
 #Decrypt Code
@@ -77,21 +75,4 @@ for i in range (1,file_count):
     enc_output_folder_name = 'decrypt_blocks/'
     file_name = 'block{}.bin'.format(i)
     aes_decrypt_file(edge_keys[i-1], edge_iv, input_folder_name, enc_output_folder_name,file_name)
-#'''
-
-#Edge Decrypt Code
-for i in range (1,file_count):
-    #bytes_K = cipher2[i-1]^prime2
-    file_name = 'block{}.bin'.format(i)
-    aes_decrypt_file(edge_keys[i-1], iv, down_edge_input_folder_name, down_edge_output_folder_name,file_name)
-
-#Pass the edge decrypted files to user 
-for i in range (1,file_count):
-    int_key = cipher2[i-1]^prime2
-    bytes_K = int_key.to_bytes(32, 'big')
-    file_name = 'block{}.bin'.format(i)
-    print('block keys: ',int_key)
-    aes_decrypt_file(bytes_K, iv, down_edge_output_folder_name, down_user_output_folder_name,file_name)
-
-merge_blocks(down_user_output_folder_name,metadata)
 #'''
