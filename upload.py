@@ -8,16 +8,16 @@ from mod.enc.aes import *
 prime1 = 85317060646768443274134832250229019514319591632920326205376943415602602947019
 prime2 = 154813591145766135381307408100320581872727279802381926251921153367959654726445983463789452039725321237307989748816194466520946981165617567414284940369508252295621408568741594522799840574828305266316028435844847717554430653505159371815836799626994815914862273363768236564919004629159198309175554423687355013493
 
-user_input_folder_name = 'blocks/'
-user_output_folder_name = 'encrypt_blocks/'
-edge_input_folder_name = 'encrypt_blocks/'
-edge_output_folder_name = 'edge_encrypt_blocks/'
+user_input_folder_name = 'files/blocks/'
+user_output_folder_name = 'files/encrypt_blocks/'
+edge_input_folder_name = 'files/encrypt_blocks/'
+edge_output_folder_name = 'files/edge_encrypt_blocks/'
 file_meta = 'ieee.png'
 
 # RCE Key Generation
 key = get_rce_key() #change the RCE method to sarce
 
-output_folder = 'blocks'
+output_folder = 'files/blocks'
 #print('\nRCE Key: '+str(key))
 
 #Chunking of Files
@@ -61,7 +61,7 @@ for i in range (1,file_count):
     file_path = edge_output_folder_name+file_name
     block_tag = modulo_hash_file(file_path,prime1)
     
-with open('cred.txt','x') as file:
+with open('cred.txt','w') as file:
     file.write('cipher: {} \nedge_keys: {}'.format(cipher2,edge_keys))
 #Save the block tag in edge.
 
