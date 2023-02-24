@@ -2,9 +2,17 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 
-def aes_encrypt_file(key, iv, in_file, out_file):
+def get_new_aes(key, iv):
+    return AES.new(key, AES.MODE_CBC, iv)
+
+
+def aes_encrypt_file(key, iv, in_folder, out_folder,file_name):
+    if not os.path.exists(out_folder):
+        os.mkdir(out_folder)
+    out_file = out_folder+file_name
+    in_file = in_folder+file_name
     # Create a new AES cipher
-    cipher = AES.new(key, AES.MODE_CBC, iv)
+    cipher = get_new_aes(key, iv)
 
     # Read the input file and encrypt its contents
     with open(in_file, 'rb') as f:
@@ -17,9 +25,13 @@ def aes_encrypt_file(key, iv, in_file, out_file):
     with open(out_file, 'wb') as f:
         f.write(ciphertext)
 
-def aes_decrypt_file(key, iv, in_file, out_file):
+def aes_decrypt_file(key, iv, in_folder, out_folder, file_name):
     # Create a new AES cipher
-    cipher = AES.new(key, AES.MODE_CBC, iv)
+    if not os.path.exists(out_folder):
+        os.mkdir(out_folder)
+    out_file = out_folder+file_name
+    in_file = in_folder+file_name
+    cipher = get_new_aes(key, iv)
 
     # Read the input file and decrypt its contents
     with open(in_file, 'rb') as f:
@@ -34,6 +46,7 @@ def aes_decrypt_file(key, iv, in_file, out_file):
     from Crypto.Cipher import AES
 import os
 
+'''
 def aes_encrypt_text(key, plaintext):
     cipher = AES.new(key, AES.MODE_CBC)
     block_size = AES.block_size
@@ -66,3 +79,4 @@ def aes_decrypt_byte(key, ciphertext):
 
 def int_to_bytes(i):
     return i.to_bytes((i.bit_length() + 7) // 8, 'big')
+'''
