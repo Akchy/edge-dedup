@@ -11,7 +11,7 @@ __pycache__/
 *.so
 # mod files
 files/*
-cred.txt
+datas/*
 # Distribution / packaging
 .Python
 build/
