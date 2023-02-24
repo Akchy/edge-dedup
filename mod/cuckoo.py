@@ -11,9 +11,6 @@ def check_cuckoo(token):
     
     return cf.__contains__(str(token))
 
-    # Check if an item is in the filter
-    print(cf.contains("item1")) # True
-    print(cf.contains("item4")) # False
 ''''
     # Remove an item from the filter
     cf.delete("item2")

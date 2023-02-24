@@ -11,7 +11,7 @@ def generate_keys():
 
 def rsa_encrypt(public_key, message):
     ciphertext = rsa.encrypt(message, rsa.PublicKey(public_key.n, public_key.e))
-    return ciphertext.hex()
+    return ciphertext
 
 def rsa_decypt(private_key, ciphertext):
     plaintext = rsa.decrypt(ciphertext, private_key)
