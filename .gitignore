@@ -12,6 +12,7 @@ __pycache__/
 # mod files
 files/*
 datas/*
+subs_blocks/*
 # Distribution / packaging
 .Python
 build/
