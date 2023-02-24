@@ -1,0 +1,8 @@
+bitarray==2.6.2
+bitstring==4.0.1
+cryptography==39.0.1
+cuckoo-filter==1.0.6
+numpy==1.23.5
+pycryptodome==3.16.0
+pyOpenSSL==23.0.0
+rsa==4.9
