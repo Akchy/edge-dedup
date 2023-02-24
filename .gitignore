@@ -9,10 +9,13 @@ __pycache__/
 
 # C extensions
 *.so
+
 # mod files
 files/*
 datas/*
 subs_blocks/*
+
+
 # Distribution / packaging
 .Python
 build/
