@@ -1,7 +1,6 @@
 from mod.enc.sarce import get_rce_key
 #from Crypto.Util.number import getPrime,getStrongPrime
 from mod.divide_files import divide_file_by_size, merge_blocks
-from Crypto.Random import get_random_bytes
 from mod.modulo_hash import *
 from mod.enc.aes import *
 from mod.enc.rsa_keys import generate_keys
@@ -62,19 +61,19 @@ def upload_file(file_meta):
 
     # Saving User's Public and Private keys in a file.
     with open('datas/rsa.txt','w+') as file:
-        file.write('public: {} \private: {}'.format(public_key,private_key))
+        file.write('public= {} \nprivate= {}'.format(public_key,private_key))
 
     with open('datas/file_tag.txt', 'a+') as file:
-        file.write('\nfile_tag: {}'.format(file_tag))
+        file.write('\nfile_tag= {}'.format(file_tag))
 
     with open('datas/metadata.txt', 'a+') as file:
-        file.write('\nfile_name: {}\nfile_count: {}'.format(file_meta, file_count))
+        file.write('\nfile_name= {}\nfile_count= {}'.format(file_meta, file_count))
 
     #Edge will encrypt each block again and save the Key in the edge node along with hash of the block
     edge_iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
     edge_keys=[]
     for i in range (1,file_count):
-        edge_bytes_K = get_random_bytes(32)
+        edge_bytes_K = os.urandom(32)
         edge_keys.append(edge_bytes_K)
         file_name = 'block{}.bin'.format(i)
         aes_encrypt_file(edge_bytes_K, edge_iv, edge_input_folder_name, edge_output_folder_name,file_name)
@@ -83,11 +82,11 @@ def upload_file(file_meta):
 
     # Saving Cipher2 and Edge Keys in a file.    
     with open('datas/cred.txt','w+') as file:
-        file.write('cipher: {} \nedge_keys: {}'.format(cipher2,edge_keys))
+        file.write('cipher= {} \nedge_keys= {}'.format(cipher2,edge_keys))
 
     # Saving block tags in edge node as a file.
     with open('datas/tags.txt','w+') as file:
-        file.write('block_tag: {}'.format(block_tokens))
+        file.write('block_tag= {}'.format(block_tokens))
 
     #Decrypt Code
 
