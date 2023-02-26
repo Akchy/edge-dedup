@@ -47,12 +47,12 @@ def insert_file(file_tag, public_key, group):
 
 def update(old_file_tag, new_file_tag, public_key):
     version_table_name = get_version_table(old_file_tag)
-    owner_table_name = get_owner_table_name(file_tag)
+    owner_table_name = get_owner_table_name(old_file_tag)
     cursor = mydb.cursor()
     if not check_access(public_key, owner_table_name):
         return -1 # No Access
     cursor.execute("insert into {} (file_tag) values (%s)".format(version_table_name),(new_file_tag,))
-    is_group, group_no = get_group_det(file_tag)
+    is_group, group_no = get_group_det(old_file_tag)
     if is_group=='N':
         insert_command = "insert into hash_table (file_tag, owner_table,version_table) values (%s, %s, %s)"
         insert_values = (new_file_tag,owner_table_name,version_table_name)
