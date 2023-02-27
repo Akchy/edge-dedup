@@ -1,12 +1,12 @@
 from mod.enc.sarce import get_rce_key
 #from Crypto.Util.number import getPrime,getStrongPrime
-from mod.divide_files import divide_file_by_size, merge_blocks
+from mod.divide_files import divide_file_by_size
 from mod.modulo_hash import *
 from mod.enc.aes import *
 from mod.enc.rsa_keys import generate_keys
 
 
-def upload_file(file_meta):
+def upload_file(file_name, old_file_tag='', is_update=False):
     prime1 = 85317060646768443274134832250229019514319591632920326205376943415602602947019
     prime2 = 154813591145766135381307408100320581872727279802381926251921153367959654726445983463789452039725321237307989748816194466520946981165617567414284940369508252295621408568741594522799840574828305266316028435844847717554430653505159371815836799626994815914862273363768236564919004629159198309175554423687355013493
     if not os.path.exists('files'):
@@ -21,14 +21,14 @@ def upload_file(file_meta):
     public_key, private_key = generate_keys()
 
 
-    file_tag = modulo_hash_file(file_meta,prime1)
+    file_tag = modulo_hash_file(file_name,prime1)
     # RCE Key Generation
     rce_key = get_rce_key(file_tag) #change the RCE method to sarce
     rce_key = bytes(rce_key[0:24],'utf-8')
     #print('\nRCE Key: ',rce_key)
     
     #Chunking of Files
-    file_count=divide_file_by_size(file_meta, 1024, user_input_folder_name)
+    file_count=divide_file_by_size(file_name, 1024, user_input_folder_name)
 
     block_keys = []
     #block_tokens = []
@@ -59,7 +59,7 @@ def upload_file(file_meta):
         file.write('file_tag= {}'.format(file_tag))
 
     with open('datas/metadata.txt', 'a+') as file:
-        file.write('\nfile_name= {}\nfile_count= {}'.format(file_meta, file_count))
+        file.write('\nfile_name= {}\nfile_count= {}'.format(file_name, file_count))
 
     with open('datas/ciphers.txt', 'a+') as file:
         file.write('cipher_2= {}\ncipher_3= {}'.format(cipher_2,cipher_3))
@@ -73,9 +73,9 @@ def upload_file(file_meta):
     for i in range (1,file_count):
         edge_bytes_K = os.urandom(32)
         edge_keys.append(edge_bytes_K)
-        file_name = 'block{}.bin'.format(i)
-        aes_encrypt_file(edge_bytes_K, edge_iv, edge_input_folder_name, edge_output_folder_name,file_name)
-        block_path = edge_output_folder_name+file_name
+        block_name = 'block{}.bin'.format(i)
+        aes_encrypt_file(edge_bytes_K, edge_iv, edge_input_folder_name, edge_output_folder_name,block_name)
+        block_path = edge_output_folder_name+block_name
         mod = modulo_hash_file(block_path,prime1)
         block_tokens.append(mod)
         #Save the block tag in edge.
@@ -94,5 +94,6 @@ def upload_file(file_meta):
         file_name = 'block{}.bin'.format(i)
         aes_decrypt_file(edge_keys[i-1], edge_iv, input_folder_name, enc_output_folder_name,file_name)
     #'''
+
 
 upload_file('test.txt')
