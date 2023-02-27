@@ -1,30 +1,34 @@
 # Here's the code for user
+import rsa
 import edge
 import server
 from mod.enc.aes import *
 from mod.modulo_hash import *
 from mod.enc.sarce import get_rce_key
 from mod.divide_files import merge_blocks
-from mod.enc.rsa_keys import generate_keys
+from mod.enc.rsa_keys import generate_keys, rsa_decypt
 from mod.divide_files import divide_file_by_size
 
 prime1 = 85317060646768443274134832250229019514319591632920326205376943415602602947019
 prime2 = 154813591145766135381307408100320581872727279802381926251921153367959654726445983463789452039725321237307989748816194466520946981165617567414284940369508252295621408568741594522799840574828305266316028435844847717554430653505159371815836799626994815914862273363768236564919004629159198309175554423687355013493
-
+temp = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
 user_input_folder_name = 'files/blocks/'
 user_output_folder_name = 'files/encrypt_blocks/'
 user_down_input_folder_name = 'files/edge_decrypt_blocks/'
 user_down_output_folder_name = 'files/dencrypt_blocks/'
+user_sub_input_folder_name = 'subs_blocks/'
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
         os.mkdir('files')
 if not os.path.exists('datas'):
         os.mkdir('datas')
+if not os.path.exists('subs_blocks'):
+        os.mkdir('subs_blocks')
 
 
 
-def user_upload(file_name, group):
+def user_upload(file_name, group,public_key, private_key):
     file_tag = get_file_tag(file_name)
     # RCE Key Generation
     edge_rce_key = edge.get_edge_rce_key()
@@ -32,9 +36,9 @@ def user_upload(file_name, group):
     rce_key = bytes(str_rce_key[0:24],'utf-8')
     file_exists = server.check_file_tag_exists(file_tag)
     if file_exists == True:
-        print('duplicate')
+        subs_upload(file_name, file_tag,public_key,private_key)
     else:
-        public_key, private_key = generate_keys()
+        
         file_count,cipher_2,cipher_3=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
         metadata = [file_name,file_count]
         cipher_2_list= '-'.join(str(c) for c in cipher_2)
@@ -59,7 +63,6 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
         block_keys.append(mod)
         bytes_K = mod.to_bytes(32, 'big')
         aes_encrypt_file(bytes_K, iv, user_input_folder_name, user_output_folder_name,block_name)
-        print('\nblock Key: ',bytes_K)
         bytes_cipher = aes_encrypt_byte(rce_key,mod)
         int_cipher = int.from_bytes(bytes_cipher,'big')
         cipher_2.append(int_cipher)
@@ -105,13 +108,33 @@ def user_download(file_name,public_key):
 
     merge_blocks(user_down_output_folder_name,save_file_name)
     print('File downloaded and saved under the name: ',save_file_name)
-    return 1
 
-#user_upload('test.txt','N')
-public_key = 'PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)'
-user_download('test1.txt', public_key)
+def subs_upload(file_name, file_tag, public_key, private_key):
+    value = server.check_access(file_tag,public_key)
+    if not value:
+        print("Same Person")
+        return 0
+    print('Different Person')
+    #'''
+    block_list = value
+    _=divide_file_by_size(file_name, 1024, user_sub_input_folder_name)
+    block_keys = []
+    for i in block_list:
+        file_name = 'block{}.bin'.format(i)
+        file_path = user_sub_input_folder_name+file_name
+        mod = modulo_hash_file(file_path,prime2)
+        block_keys.append(mod)
+    
+    val = server.blocks_to_server_cuckoo(block_keys, public_key)
+    if val != -1:
+        time_dec = rsa_decypt(private_key,val)
+    
+    x = server.check_time_hash(file_tag, public_key, time_dec)
+    #'''
 
-'''
-b'\xa6\xa5~\xc0\xd5B2\xb4\xaa\xdd\xf49"\xb2\x16\x0e\xaa?\xc5~\x81@M\xd3\\G[\x8f\xc4\x92\xd82\xbd\x98yX=1\xaf\xf2\x96?\xe5QB\xc1\x08\x8c?\x18\x883d\xb7\xb4\x99}OL|\xdc\xc3\r\x07'
-b'\xa6\xa5~\xc0\xd5B2\xb4\xaa\xdd\xf49"\xb2\x16\x0e\xaa?\xc5~\x81@M\xd3\\G[\x8f\xc4\x92\xd82\xbd\x98yX=1\xaf\xf2\x96?\xe5QB\xc1\x08\x8c?\x18\x883d\xb7\xb4\x99}OL|\xdc\xc3\r\x07'
-'''
+public_key, private_key = generate_keys()
+public_key = rsa.PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)
+private_key = rsa.PrivateKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537, 1030691669318750359951625319862690475818347967117902605872939930367594308397554381247838360695330336552349907433970389960768509782742058080789448232712325826281082261178632239073798253718751096103441456539354111286400036129262946954889075051792123457429342509369899192140299157753644374884936706624123295044143642185, 144316483646245528065267241335886041264166327522302219260632995815227677664448673850105699878958127212618068955859752072987245918861275831575505446408281521548720709797, 11223597577550573967916132102918873794347730871873978637357031959131200754447345444825878496219616432817134464015955214999041127472681083882349565039)
+user_upload('test.txt','N', public_key, private_key)
+#user_download('test.txt', public_key)
+

@@ -196,8 +196,30 @@ def get_ciphers(file_tag, public_key):
         return (cipher_2, cipher_3, metadata)
     else:
         return -1
+    
+def get_meta(file_tag):
+    cursor = mydb.cursor()
+    cursor.execute("select metadata from hash_table where file_tag=%s",(file_tag,))
+    myresult = cursor.fetchone()
+    metadata = myresult[0]
+    return metadata
 
-public_key = "PublicKey(1811894381714228791437715199125138441053188238781309785778539001753982230331889470118071352286003534767147063081280636475336316635332185292871419056936721970666851031602015612498812180909637220058492502528579123543268093376750727858037728412193990038676876669051466640315549098928940551851457399205667681378300824161, 65537)"
+def save_time(public_key, time_hash):
+    cursor = mydb.cursor()
+    cursor.execute("create table if not exists time_hash (id INT AUTO_INCREMENT PRIMARY KEY, public_key LONGTEXT, time_val LONGTEXT)")
+    cursor.execute("insert into time_hash (public_key, time_val) values (%s,%s)", (public_key,time_hash))
+    mydb.commit()
+
+def get_time_hash(public_key):
+    cursor = mydb.cursor()
+    cursor.execute("select time_val from time_hash where public_key=%s",(public_key,))
+    myresult = cursor.fetchone()
+    if myresult != None:
+        return myresult[0]
+    else:
+        return -1 # No time saved for Public Key
+
+public_key = "PublicKey(0811894381714228791437715199125138441053188238781309785778539001753982230331889470118071352286003534767147063081280636475336316635332185292871419056936721970666851031602015612498812180909637220058492502528579123543268093376750727858037728412193990038676876669051466640315549098928940551851457399205667681378300824161, 65537)"
 file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
 new_file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
 '''
@@ -216,4 +238,8 @@ new_file_tag = "7928950432081674965631200279768630375005327093275527785279822674
 #print(x)
 
 get_ciphers(file_tag,public_key)
+
+
+#save_time(public_key, file_tag)
+get_time_hash(public_key)
 #'''
