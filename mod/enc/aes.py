@@ -46,22 +46,6 @@ def aes_decrypt_file(key, iv, in_folder, out_folder, file_name):
     from Crypto.Cipher import AES
 import os
 
-'''
-def aes_encrypt_text(key, plaintext):
-    cipher = AES.new(key, AES.MODE_CBC)
-    block_size = AES.block_size
-    padding_length = block_size - (len(plaintext) % block_size)
-    padding = bytes([padding_length] * padding_length)
-    padded_plaintext = plaintext + padding
-    iv = os.urandom(block_size)
-    ciphertext = cipher.encrypt(padded_plaintext)
-    return (iv, ciphertext)
-
-def aes_decrypt_text(key, iv, ciphertext):
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    plaintext = cipher.decrypt(ciphertext)
-    padding_length = plaintext[-1]
-    return plaintext[:-padding_length]
 
 def aes_encrypt_byte(key, data):
     data = int_to_bytes(data)
@@ -80,3 +64,11 @@ def aes_decrypt_byte(key, ciphertext):
 def int_to_bytes(i):
     return i.to_bytes((i.bit_length() + 7) // 8, 'big')
 '''
+key = b'N8MttkcH0rc6laYG3zZCO1mHo3hPd6izbeei/26Yu5txQ3l3ZThtQUJiQ0JTYkM5a1BGSFFOWUlWeFRkMkgrY1BiV2k2LzA3ZVA0bG5leTZxeUVJMDV2clA3dFVWUjhpWU1rSG40VUZqRGl5RWlma05Sa01jZ04rVWR0TndoRkV2VE5IT0dTak9jMHZzbXNmaFczaU9ZOWZSSUFUZ3FEY4SxTIggI+mEfk4tmPbfUxNDwCCL6h/5dHnlakBiIu98'
+key1 = 11232534634633454345654567878987887
+key2 = b'njWvRQl9iJiurgZNkXqdmg=='
+x =aes_encrypt_byte(key2, key1)
+print(x)
+v = aes_decrypt_byte(key2,x)
+print(int.from_bytes(v,'big'))
+#'''

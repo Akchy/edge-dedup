@@ -83,9 +83,9 @@ def sarce_decrypt_message(key, server_key, ciphertext):
     return decrypt_message(client_key, ciphertext.decode())
 
 
-def get_rce_key():
+def get_rce_key(file_tag):
     server = generate_server_key()
     private_keys = get_random_bytes(16)
-    rce_key = sarce_encrypt_message(private_keys, server, 'hi there')
-    #print(x)
+    rce_key = sarce_encrypt_message(private_keys, server, str(file_tag))
+    #print(rce_key)
     return rce_key

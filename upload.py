@@ -23,70 +23,66 @@ def upload_file(file_meta):
 
     file_tag = modulo_hash_file(file_meta,prime1)
     # RCE Key Generation
-    key = get_rce_key() #change the RCE method to sarce
-
-    output_folder = 'files/blocks'
-    #print('\nRCE Key: '+str(key))
-
+    rce_key = get_rce_key(file_tag) #change the RCE method to sarce
+    rce_key = bytes(rce_key[0:24],'utf-8')
+    #print('\nRCE Key: ',rce_key)
+    
     #Chunking of Files
-    file_count=divide_file_by_size(file_meta, 1024, output_folder)
+    file_count=divide_file_by_size(file_meta, 1024, user_input_folder_name)
 
-    #i=0
-    #MLE Keys for each block
-    #while i<10:
     block_keys = []
-    block_tokens = []
+    #block_tokens = []
+    cipher_2 = []
+    iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
     for i in range (1,file_count):
-        file_name = 'block{}.bin'.format(i)
-        file_path = user_input_folder_name+file_name
-        mod = modulo_hash_file(file_path,prime1)
+        block_name = 'block{}.bin'.format(i)
+        block_path = user_input_folder_name+block_name
+        mod = modulo_hash_file(block_path,prime1)
         block_keys.append(mod)
-        block_token = modulo_hash_file(file_path,prime2)
-        block_tokens.append(block_token)
+        bytes_K = mod.to_bytes(32, 'big')
+        aes_encrypt_file(bytes_K, iv, user_input_folder_name, user_output_folder_name,block_name)
+        cipher_2.append(aes_encrypt_byte(rce_key,mod))
+        #wrong place
+        #block_token = modulo_hash_file(block_path,prime2)
+        #block_tokens.append(block_token)
 
+    int_rce_key = int.from_bytes(rce_key,'big')
+    cipher_3 = int_rce_key ^ prime2
 
-    #print('block_keys: {} \nlen: {}'.format(block_keys, len(str(block_keys))))
-    #print('\nblock_keys: '+str(block_keys)+'\n len: '+str(len(str(block_keys))))
-
-    # Generate a random key and initialization vector (IV)
-
-    cipher2=[]
-    iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92" # 16 bytes for AES-128
-    for i in range (1,file_count):
-        bytes_K = block_keys[i-1].to_bytes(32, 'big')
-        file_name = 'block{}.bin'.format(i)
-        aes_encrypt_file(bytes_K, iv, user_input_folder_name, user_output_folder_name,file_name)
-        cipher2.append(block_keys[i-1]^prime2)
-
+    # Save Cipher_2 and Cipher_3 in a file
 
     # Saving User's Public and Private keys in a file.
     with open('datas/rsa.txt','w+') as file:
         file.write('public= {} \nprivate= {}'.format(public_key,private_key))
 
     with open('datas/file_tag.txt', 'a+') as file:
-        file.write('\nfile_tag= {}'.format(file_tag))
+        file.write('file_tag= {}'.format(file_tag))
 
     with open('datas/metadata.txt', 'a+') as file:
         file.write('\nfile_name= {}\nfile_count= {}'.format(file_meta, file_count))
 
+    with open('datas/ciphers.txt', 'a+') as file:
+        file.write('cipher_2= {}\ncipher_3= {}'.format(cipher_2,cipher_3))
+
+    #-----------------------------------------------------------------------------------#
+
     #Edge will encrypt each block again and save the Key in the edge node along with hash of the block
     edge_iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
     edge_keys=[]
+    block_tokens=[]
     for i in range (1,file_count):
         edge_bytes_K = os.urandom(32)
         edge_keys.append(edge_bytes_K)
         file_name = 'block{}.bin'.format(i)
         aes_encrypt_file(edge_bytes_K, edge_iv, edge_input_folder_name, edge_output_folder_name,file_name)
-        
+        block_path = edge_output_folder_name+file_name
+        mod = modulo_hash_file(block_path,prime1)
+        block_tokens.append(mod)
         #Save the block tag in edge.
 
     # Saving Cipher2 and Edge Keys in a file.    
     with open('datas/cred.txt','w+') as file:
-        file.write('cipher= {} \nedge_keys= {}'.format(cipher2,edge_keys))
-
-    # Saving block tags in edge node as a file.
-    with open('datas/tags.txt','w+') as file:
-        file.write('block_tag= {}'.format(block_tokens))
+        file.write('block_tokens= {} \nedge_keys= {}'.format(block_tokens,edge_keys))
 
     #Decrypt Code
 
