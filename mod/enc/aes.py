@@ -1,6 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
+import codecs
 
 def get_new_aes(key, iv):
     return AES.new(key, AES.MODE_CBC, iv)
@@ -69,6 +70,10 @@ key1 = 11232534634633454345654567878987887
 key2 = b'njWvRQl9iJiurgZNkXqdmg=='
 x =aes_encrypt_byte(key2, key1)
 print(x)
-v = aes_decrypt_byte(key2,x)
-print(int.from_bytes(v,'big'))
+r = int.from_bytes(x,'big')
+print(r)
+p = r.to_bytes(32,'big')
+print(p)
+#v = aes_decrypt_byte(key2,p)
+#print(int.from_bytes(v,'big'))
 #'''

@@ -10,42 +10,43 @@ mydb = mysql.connector.connect(
     database = "server"
 )
 
-def upload_file(file_tag, public_key, group='N'):
+def upload_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
         print('Init Subsequent Uplaod')
     else:
-        insert_file(file_tag, public_key, group)
+        insert_file(file_tag, public_key, group, cipher_2,cipher_3,metadata)
 
 
-def insert_file(file_tag, public_key, group):
+def insert_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
     print('Init File Upload')
     cursor = mydb.cursor()
     tag =  file_tag
-    cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000))")
+    cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000), cipher_2 LONGTEXT, cipher_3 LONGTEXT, metadata LONGTEXT)")
     owner_table_name = create_owner_table(public_key)
+    group_name='N'
     # Create version table
     version_table = create_version_table(file_tag)
-    print(version_table)
         # Create version table if not exists 
     if group =='N':
-        insert_command = "insert into hash_table (file_tag, owner_table,version_table) values (%s, %s, %s)"
-        insert_values = (tag,owner_table_name,version_table)
+        insert_command = "insert into hash_table (file_tag, owner_table,version_table, cipher_2, cipher_3, metadata) values (%s, %s, %s ,%s,%s,%s)"
+        insert_values = (tag,owner_table_name,version_table, cipher_2, cipher_3, metadata)
         cursor.execute(insert_command, insert_values)
         
     else:
         timestamp = get_timestamp()
         group_name = 'group_'+timestamp
-        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table) values (%s, %s, %s,%s,%s)"
+        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table, cipher_2, cipher_3, metadata) values (%s, %s, %s,%s,%s,%s,%s,%s)"
         is_group = 'Y'
-        insert_values= (tag,is_group, group_name,owner_table_name,version_table)
+        insert_values= (tag,is_group, group_name,owner_table_name,version_table, cipher_2, cipher_3, metadata)
         cursor.execute(insert_command, insert_values)
         
     mydb.commit()
     print('File Uploaded')
+    return group_name
 
 
-def update(old_file_tag, new_file_tag, public_key):
+def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3,metadata):
     version_table_name = get_version_table(old_file_tag)
     owner_table_name = get_owner_table_name(old_file_tag)
     cursor = mydb.cursor()
@@ -54,9 +55,9 @@ def update(old_file_tag, new_file_tag, public_key):
     cursor.execute("insert into {} (file_tag) values (%s)".format(version_table_name),(new_file_tag,))
     is_group, group_no = get_group_det(old_file_tag)
     if is_group=='Y':
-        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table) values (%s, %s, %s,%s,%s)"
+        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table,cipher_2,cipher_3,metadata) values (%s, %s, %s,%s,%s,%s,%s,%s)"
         is_group = 'Y'
-        insert_values= (new_file_tag,is_group, group_no,owner_table_name,version_table_name)
+        insert_values= (new_file_tag,is_group, group_no,owner_table_name,version_table_name,cipher_2,cipher_3,metadata)
         cursor.execute(insert_command, insert_values)
     mydb.commit()
     return 1
@@ -142,9 +143,9 @@ def check_file_tag(file_tag):
     cursor.execute("SELECT file_tag FROM hash_table where file_tag=%s",(file_tag,))
     myresult = cursor.fetchone()
     if myresult != None:
-        return 1 #Duplicate File
+        return True #Duplicate File
     else:
-        return 0 #New File
+        return False #New File
 
 def get_latest_file_tag(file_tag):
     file_tag = str(file_tag)
@@ -183,11 +184,23 @@ def get_group_det(file_tag):
     else:
         return myresult
 
-'''
-public_key = "PublicKey(1510856045871991099461062366966773242040587774291150808567196749515647261994583466034466236092427883017102311971032367607967106870044544473378462108167492238574561256385306847869581764606954295267464370702638991370748037790760894195692666823244646249641362973234990065292745326457163344292839621322258953903474872999, 65537)"
-file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071263"
-new_file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
+def get_ciphers(file_tag, public_key):
+    access = check_access(file_tag, public_key)
+    if access:
+        cursor = mydb.cursor()
+        cursor.execute("select cipher_2, cipher_3, metadata from hash_table where file_tag=%s",(file_tag,))
+        myresult = cursor.fetchone()
+        cipher_2 = myresult[0]
+        cipher_3 = myresult[1]
+        metadata = myresult[2]
+        return (cipher_2, cipher_3, metadata)
+    else:
+        return -1
 
+public_key = "PublicKey(1811894381714228791437715199125138441053188238781309785778539001753982230331889470118071352286003534767147063081280636475336316635332185292871419056936721970666851031602015612498812180909637220058492502528579123543268093376750727858037728412193990038676876669051466640315549098928940551851457399205667681378300824161, 65537)"
+file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
+new_file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
+'''
 #insert_file(file_tag,public_key,'N')
 #x = get_owner_list(file_tag)
 #check_file_tag(file_tag)
@@ -201,4 +214,6 @@ new_file_tag = "7928950432081674965631200279768630375005327093275527785279822674
 
 #x =update(file_tag, new_file_tag, public_key)
 #print(x)
-'''
+
+get_ciphers(file_tag,public_key)
+#'''

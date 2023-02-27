@@ -23,7 +23,7 @@ def upload_file(file_name, old_file_tag='', is_update=False):
 
     file_tag = modulo_hash_file(file_name,prime1)
     # RCE Key Generation
-    rce_key = get_rce_key(file_tag) #change the RCE method to sarce
+    rce_key = get_rce_key(file_tag,'') #change the RCE method to sarce
     rce_key = bytes(rce_key[0:24],'utf-8')
     #print('\nRCE Key: ',rce_key)
     
