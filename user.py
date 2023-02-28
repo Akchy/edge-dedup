@@ -17,6 +17,7 @@ user_output_folder_name = 'files/encrypt_blocks/'
 user_down_input_folder_name = 'files/edge_decrypt_blocks/'
 user_down_output_folder_name = 'files/dencrypt_blocks/'
 user_sub_input_folder_name = 'subs_blocks/'
+file_size = 1024
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
@@ -49,7 +50,7 @@ def get_file_tag(file_name):
     return modulo_hash_file(file_name,prime1)
 
 def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
-    file_count=divide_file_by_size(file_name, 51200, user_input_folder_name)
+    file_count=divide_file_by_size(file_name, file_size, user_input_folder_name)
     block_keys = []
     cuckoo_blocks = []
     cipher_2 = []
@@ -123,7 +124,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     if not os.path.exists('subs_blocks'):
         os.mkdir('subs_blocks')
     block_list = value
-    _=divide_file_by_size(file_name, 51200, user_sub_input_folder_name)
+    _=divide_file_by_size(file_name, file_size, user_sub_input_folder_name)
     block_keys = []
     for i in block_list:
         file_name = 'block{}.bin'.format(i)
