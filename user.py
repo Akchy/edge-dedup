@@ -24,16 +24,14 @@ if not os.path.exists('files'):
 if not os.path.exists('datas'):
         os.mkdir('datas')
 
-
-
-def user_upload(file_name, group,public_key, private_key):
+def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
     # RCE Key Generation
     edge_rce_key = edge.get_edge_rce_key()
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
     file_exists = edge.check_file_tag_exists_server(file_tag)
-    if file_exists == True:
+    if is_update=='N' and file_exists == True:
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
         
@@ -41,20 +39,20 @@ def user_upload(file_name, group,public_key, private_key):
         metadata = [file_name,file_count]
         cipher_2_list= '-'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '-'.join(str(c) for c in cuckoo_blocks)
-        group_name = edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata))
+        group_name = edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
 
         #save group name in a file
         with open('datas/group_name.txt', 'a+') as file:
             file.write('\n\ngroup_name= {}'.format(group_name))
 
 def get_file_tag(file_name):
+    print(type(file_name))
     return modulo_hash_file(file_name,prime1)
 
 def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     file_count=divide_file_by_size(file_name, 1024, user_input_folder_name)
     block_keys = []
     cuckoo_blocks = []
-    #block_tokens = []
     cipher_2 = []
     for i in range (1,file_count):
         block_name = 'block{}.bin'.format(i)
@@ -89,7 +87,11 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
 
 def user_download(file_name,public_key):
     file_tag = get_file_tag(file_name)
-    val =edge.download_from_edge(file_tag, public_key)
+    val_tag = check_for_update(file_name,'N')
+    if val_tag!=0 and val_tag !=-1:
+        val =edge.download_from_edge(val_tag[0], public_key)
+    else:
+        val =edge.download_from_edge(file_tag, public_key)
     if val == -1:
         print('No Access to the file')
         return -1
@@ -137,26 +139,32 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
 
-def user_update(file_name, public_key, old_file_tag):
-    file_tag = get_file_tag(file_name)
-    if old_file_tag=='N':
-        print('check for latest')
-    else:
-        print('update new file')
-    return 1
-
-def check_for_update(file_name, public_key):
+def check_for_update(file_name, display='Y'):
     #check the server for update
-    edge.check_fo_update
-    return 1
+    file_tag = get_file_tag(file_name)
+    val = edge.check_fo_update_server(file_tag)
+    if display=='N':
+        return val
+    if val==0:
+        print('Same No Update')
+    elif val == -1:
+        print('No File in server, Upload as a New File')
+    else:
+        print('A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val[0]))
+        print('\nPlease use the below mentioned file tag while updating: \nOld File Tag: {}\n'.format(file_tag))
 
 #public_key, private_key = generate_keys()
 public_key = rsa.PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)
 private_key = rsa.PrivateKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537, 1030691669318750359951625319862690475818347967117902605872939930367594308397554381247838360695330336552349907433970389960768509782742058080789448232712325826281082261178632239073798253718751096103441456539354111286400036129262946954889075051792123457429342509369899192140299157753644374884936706624123295044143642185, 144316483646245528065267241335886041264166327522302219260632995815227677664448673850105699878958127212618068955859752072987245918861275831575505446408281521548720709797, 11223597577550573967916132102918873794347730871873978637357031959131200754447345444825878496219616432817134464015955214999041127472681083882349565039)
 #public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 #private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
-user_upload('test.txt','N', public_key, private_key)
 
-#user_download('test.txt', public_key)
+file_name = 'test.txt'
+is_group = 'Y'
+is_update= 'Y'
+old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
+#user_upload(file_name,is_group, public_key, private_key,is_update, old_file_tag)
+
+user_download('test.txt', public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)

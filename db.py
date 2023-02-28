@@ -47,7 +47,7 @@ def insert_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags,cuckoo
     return group_name
 
 
-def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags, metadata):
+def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata):
     version_table_name = get_version_table(old_file_tag)
     owner_table_name = get_owner_table_name(old_file_tag)
     cursor = server_db.cursor()
@@ -56,12 +56,12 @@ def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,
     cursor.execute("insert into {} (file_tag) values (%s)".format(version_table_name),(new_file_tag,))
     is_group, group_no = get_group_det(old_file_tag)
     if is_group=='Y':
-        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table,cipher_2,cipher_3, block_tags, metadata) values (%s, %s, %s,%s,%s,%s,%s,%s,%s)"
+        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata) values (%s, %s, %s,%s,%s,%s,%s,%s,%s,%s)"
         is_group = 'Y'
-        insert_values= (new_file_tag,is_group, group_no,owner_table_name,version_table_name,cipher_2,cipher_3, block_tags, metadata)
+        insert_values= (new_file_tag,is_group, group_no,owner_table_name,version_table_name,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
         cursor.execute(insert_command, insert_values)
     server_db.commit()
-    return 1
+    return group_no
 
 
 def create_owner_table(public_key):

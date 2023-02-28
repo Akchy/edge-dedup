@@ -20,7 +20,7 @@ edge_key = b'\xe8\xab\xad\xb9@Z<f\xd2\xa6\x96\xbb\xfe\xbb2\x14\x17\xea\x0f\xb4\x
 def get_edge_rce_key():
     return get_random_bytes(16)
 
-def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata):
+def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag):
     block_tags=[]
     for i in range (1,file_count):
         o_file_name = str(file_tag)+'_{}.bin'.format(i)
@@ -36,7 +36,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             #Send only the unique ones.
 
     block_tags_list= '-'.join(str(b) for b in block_tags)
-    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata)
+    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
     # Saving Cipher2 and Edge Keys in a file.    
     with open('datas/cred.txt','w+') as file:
@@ -63,7 +63,6 @@ def download_from_edge(file_tag, public_key):
             index = server.get_index_of_block(block_tag,file_tag)+1 #define
             block_suffix = file_tag_of_block
             #fetch block
-        #mod = modulo_hash_file(block_path,prime2)
         else:
             index = i
             block_suffix = file_tag
@@ -86,4 +85,8 @@ def blocks_to_server_cuckoo_server(file_tag, block_keys, public_key):
 
 def check_time_hash_server(file_tag, public_key, time_dec):
     val = server.check_time_hash(file_tag, public_key, time_dec)
+    return val
+
+def check_fo_update_server(file_tag):
+    val = server.check_fo_update_server(file_tag)
     return val
