@@ -1,8 +1,14 @@
 bitarray==2.6.2
 bitstring==4.0.1
+cffi==1.15.1
 cryptography==39.0.1
 cuckoo-filter==1.0.6
+mmh3==3.0.0
+mysql-connector-python==8.0.32
 numpy==1.23.5
+protobuf==3.20.3
+pyasn1==0.4.8
+pycparser==2.21
 pycryptodome==3.16.0
 pyOpenSSL==23.0.0
 rsa==4.9

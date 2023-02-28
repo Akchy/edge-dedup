@@ -50,7 +50,6 @@ def download_from_edge(file_tag, public_key):
         return -1 # No Access
     cipher_2, cipher_3, block_tags, metadata = val
     metadata = metadata.split(',')
-    print(metadata)
     _, file_count = metadata
     file_count = file_count[:-1]
     tag_list_string= block_tags
