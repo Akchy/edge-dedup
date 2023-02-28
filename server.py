@@ -16,9 +16,9 @@ def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, metadata):
 
 
 def download_from_server(file_tag, public_key):
-    val = db.get_ciphers(file_tag, public_key)
+    val = db.get_ciphers(file_tag, str(public_key))
     if val == -1 :
-        return -1
+        return -1 #No Access
     cipher_2, cipher_3, metadata =val
     return cipher_2, cipher_3, metadata
    
@@ -66,3 +66,10 @@ def check_time_hash(file_tag,public_key, time_val):
         db.add_owner(file_tag, str(public_key))
         print('User Added')
     return 1
+
+def save_block_vales(mod, file_tag, i):
+    db.save_block_vales(mod, file_tag, i)
+    
+def get_block_values(file_tag):
+    tokens, nos = db.get_block_values(file_tag)
+    return tokens, nos

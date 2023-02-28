@@ -3,11 +3,18 @@ import mysql.connector
 import datetime
 
 # Creating connection object
-mydb = mysql.connector.connect(
+server_db = mysql.connector.connect(
 	host = "localhost",
 	user = "root",
 	password = "",
     database = "server"
+)
+
+edge_db = mysql.connector.connect(
+	host = "localhost",
+	user = "root",
+	password = "",
+    database = "edge"
 )
 
 def upload_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
@@ -20,7 +27,7 @@ def upload_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
 
 def insert_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
     print('Init File Upload')
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     tag =  file_tag
     cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000), cipher_2 LONGTEXT, cipher_3 LONGTEXT, metadata LONGTEXT)")
     owner_table_name = create_owner_table(public_key)
@@ -41,7 +48,7 @@ def insert_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
         insert_values= (tag,is_group, group_name,owner_table_name,version_table, cipher_2, cipher_3, metadata)
         cursor.execute(insert_command, insert_values)
         
-    mydb.commit()
+    server_db.commit()
     print('File Uploaded')
     return group_name
 
@@ -49,7 +56,7 @@ def insert_file(file_tag, public_key, group,cipher_2,cipher_3,metadata):
 def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3,metadata):
     version_table_name = get_version_table(old_file_tag)
     owner_table_name = get_owner_table_name(old_file_tag)
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     if not check_access(old_file_tag,public_key):
         return -1 # No Access
     cursor.execute("insert into {} (file_tag) values (%s)".format(version_table_name),(new_file_tag,))
@@ -59,23 +66,23 @@ def update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3,metadata):
         is_group = 'Y'
         insert_values= (new_file_tag,is_group, group_no,owner_table_name,version_table_name,cipher_2,cipher_3,metadata)
         cursor.execute(insert_command, insert_values)
-    mydb.commit()
+    server_db.commit()
     return 1
 
 
 def create_owner_table(public_key):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     timestamp = get_timestamp()
     owner_table_name = 'owner_table_'+timestamp
     cursor.execute("create table {} (id INT AUTO_INCREMENT PRIMARY KEY, public_key VARCHAR(1000))".format(owner_table_name))
     #cursor.execute(insert_command, insert_values)
     insert_command = "insert into {} (public_key) values (%s)".format(owner_table_name)
     cursor.execute(insert_command, (public_key,))        
-    mydb.commit()
+    server_db.commit()
     return owner_table_name
 
 def get_owner_table_name(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select owner_table from hash_table where file_tag = %s",(file_tag,))
     myresult = cursor.fetchone()
     version_table_name = myresult[0]
@@ -86,9 +93,9 @@ def add_owner(file_tag, public_key):
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
         owner_table_name = get_owner_table_name(file_tag)
-        cursor = mydb.cursor()
+        cursor = server_db.cursor()
         cursor.execute("insert into {} (public_key) values (%s)".format(owner_table_name),(public_key,))
-        mydb.commit()
+        server_db.commit()
     else:
         return -1 # No file found
 
@@ -97,15 +104,15 @@ def delete_owner(file_tag, public_key):
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
         owner_table_name = get_owner_table_name(file_tag)
-        cursor = mydb.cursor()
+        cursor = server_db.cursor()
         cursor.execute("delete from {} where public_key =%s".format(owner_table_name),(public_key,))
-        mydb.commit()
+        server_db.commit()
         check_empty_owners(file_tag, owner_table_name)
     else:
         return -1 # No file found
 
 def check_empty_owners(file_tag, owner_table_name):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select count(id) from {}".format(owner_table_name))
     count = cursor.fetchone()
     owner_count = count[0]
@@ -114,22 +121,22 @@ def check_empty_owners(file_tag, owner_table_name):
         cursor.execute("delete from hash_table where file_tag = %s", (file_tag,))
         cursor.execute("drop table {}".format(owner_table_name))
         cursor.execute("drop table {}".format(v_name))
-        mydb.commit()
+        server_db.commit()
 
 
 def create_version_table(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     timestamp = get_timestamp()
     version_table_name = 'version_'+timestamp
     cursor.execute("create table {} (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(1000))".format(version_table_name))
     #cursor.execute(insert_command, insert_values)
     insert_command = "insert into {} (file_tag) values (%s)".format(version_table_name)
     cursor.execute(insert_command, (file_tag,))        
-    mydb.commit()
+    server_db.commit()
     return version_table_name
 
 def get_version_table(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select version_table from hash_table where file_tag = %s",(file_tag,))
     myresult = cursor.fetchone()
     version_table_name = myresult[0]
@@ -139,7 +146,7 @@ def get_timestamp():
     return str(datetime.datetime.now().timestamp()).replace('.','')
 
 def check_file_tag(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("SELECT file_tag FROM hash_table where file_tag=%s",(file_tag,))
     myresult = cursor.fetchone()
     if myresult != None:
@@ -149,7 +156,7 @@ def check_file_tag(file_tag):
 
 def get_latest_file_tag(file_tag):
     file_tag = str(file_tag)
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
         cursor.execute("SELECT version_table FROM hash_table where file_tag=%s",(file_tag,))
@@ -166,7 +173,7 @@ def get_latest_file_tag(file_tag):
         return -1 # No file found
     
 def check_access(file_tag,public_key):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     owner_table_name = get_owner_table_name(file_tag)
     cursor.execute("select count(id) from {} where public_key=%s".format(owner_table_name), (public_key,))
     myresult = cursor.fetchone()
@@ -176,7 +183,7 @@ def check_access(file_tag,public_key):
         return False
 
 def get_group_det(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select is_group, group_no from hash_table where file_tag=%s",(file_tag,))
     myresult = cursor.fetchone()
     if myresult[0]=='N':
@@ -187,7 +194,7 @@ def get_group_det(file_tag):
 def get_ciphers(file_tag, public_key):
     access = check_access(file_tag, public_key)
     if access:
-        cursor = mydb.cursor()
+        cursor = server_db.cursor()
         cursor.execute("select cipher_2, cipher_3, metadata from hash_table where file_tag=%s",(file_tag,))
         myresult = cursor.fetchone()
         cipher_2 = myresult[0]
@@ -195,29 +202,49 @@ def get_ciphers(file_tag, public_key):
         metadata = myresult[2]
         return (cipher_2, cipher_3, metadata)
     else:
-        return -1
+        return -1 #No Access
     
 def get_meta(file_tag):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select metadata from hash_table where file_tag=%s",(file_tag,))
     myresult = cursor.fetchone()
     metadata = myresult[0]
     return metadata
 
 def save_time(public_key, time_hash):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("create table if not exists time_hash (id INT AUTO_INCREMENT PRIMARY KEY, public_key LONGTEXT, time_val LONGTEXT)")
     cursor.execute("insert into time_hash (public_key, time_val) values (%s,%s)", (public_key,time_hash))
-    mydb.commit()
+    server_db.commit()
 
 def get_time_hash(public_key):
-    cursor = mydb.cursor()
+    cursor = server_db.cursor()
     cursor.execute("select time_val from time_hash where public_key=%s",(public_key,))
     myresult = cursor.fetchone()
     if myresult != None:
         return myresult[0]
     else:
         return -1 # No time saved for Public Key
+    
+def save_block_vales(block_name, file_tag, i):
+    cursor = server_db.cursor()
+    cursor.execute("create table if not exists block_table (id INT AUTO_INCREMENT PRIMARY KEY, block_token LONGTEXT, file_tag VARCHAR(255), block_no INT)")
+    cursor.execute("insert into block_table (block_token, file_tag, block_no) values(%s, %s, %s)",(block_name, file_tag, i))
+
+
+def get_block_values(file_tag):
+    cursor = server_db.cursor()
+    cursor.execute("select block_token, block_no from block_table where file_tag=%s",(file_tag,))
+    myresult = cursor.fetchall()
+    #print(myresult)
+    tokens = []
+    nos = []
+    for x in myresult:
+        token,no = x
+        tokens.append(token)
+        nos.append(no)
+    return tokens, nos
+
 
 public_key = "PublicKey(0811894381714228791437715199125138441053188238781309785778539001753982230331889470118071352286003534767147063081280636475336316635332185292871419056936721970666851031602015612498812180909637220058492502528579123543268093376750727858037728412193990038676876669051466640315549098928940551851457399205667681378300824161, 65537)"
 file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"
@@ -243,3 +270,5 @@ get_ciphers(file_tag,public_key)
 #save_time(public_key, file_tag)
 get_time_hash(public_key)
 #'''
+
+#get_block_values(file_tag)

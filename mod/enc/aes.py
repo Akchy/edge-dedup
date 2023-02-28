@@ -7,10 +7,13 @@ def get_new_aes(key, iv):
     return AES.new(key, AES.MODE_CBC, iv)
 
 
-def aes_encrypt_file(key, iv, in_folder, out_folder,file_name):
+def aes_encrypt_file(key, iv, in_folder, out_folder,file_name, output_file_name ='N'):
     if not os.path.exists(out_folder):
         os.mkdir(out_folder)
-    out_file = out_folder+file_name
+    if output_file_name != 'N':
+        out_file = out_folder+output_file_name
+    else:
+        out_file = out_folder+file_name
     in_file = in_folder+file_name
     # Create a new AES cipher
     cipher = get_new_aes(key, iv)
@@ -26,12 +29,15 @@ def aes_encrypt_file(key, iv, in_folder, out_folder,file_name):
     with open(out_file, 'wb') as f:
         f.write(ciphertext)
 
-def aes_decrypt_file(key, iv, in_folder, out_folder, file_name):
+def aes_decrypt_file(key, iv, in_folder, out_folder, file_name, input_name='N'):
     # Create a new AES cipher
     if not os.path.exists(out_folder):
         os.mkdir(out_folder)
     out_file = out_folder+file_name
-    in_file = in_folder+file_name
+    if input_name != 'N':
+        in_file = in_folder+input_name
+    else:
+        in_file = in_folder+file_name
     cipher = get_new_aes(key, iv)
 
     # Read the input file and decrypt its contents

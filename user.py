@@ -23,8 +23,6 @@ if not os.path.exists('files'):
         os.mkdir('files')
 if not os.path.exists('datas'):
         os.mkdir('datas')
-if not os.path.exists('subs_blocks'):
-        os.mkdir('subs_blocks')
 
 
 
@@ -34,7 +32,7 @@ def user_upload(file_name, group,public_key, private_key):
     edge_rce_key = edge.get_edge_rce_key()
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
-    file_exists = server.check_file_tag_exists(file_tag)
+    file_exists = edge.check_file_tag_exists_server(file_tag)
     if file_exists == True:
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
@@ -105,17 +103,21 @@ def user_download(file_name,public_key):
         block_key = aes_decrypt_byte(rce_key,byte_cipher)
         file_name = 'block{}.bin'.format(i)
         aes_decrypt_file(block_key, iv, user_down_input_folder_name, user_down_output_folder_name,file_name)
-
+    save_file_name = 'downloaded_'+save_file_name
     merge_blocks(user_down_output_folder_name,save_file_name)
     print('File downloaded and saved under the name: ',save_file_name)
 
 def subs_upload(file_name, file_tag, public_key, private_key):
-    value = server.check_access(file_tag,public_key)
+    
+    value = edge.check_access_server(file_tag,public_key)
     if not value:
         print("Same Person")
         return 0
     print('Different Person')
     #'''
+
+    if not os.path.exists('subs_blocks'):
+        os.mkdir('subs_blocks')
     block_list = value
     _=divide_file_by_size(file_name, 1024, user_sub_input_folder_name)
     block_keys = []
@@ -125,16 +127,30 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
     
-    val = server.blocks_to_server_cuckoo(block_keys, public_key)
+    val = edge.blocks_to_server_cuckoo_server(block_keys, public_key)
     if val != -1:
         time_dec = rsa_decypt(private_key,val)
     
-    x = server.check_time_hash(file_tag, public_key, time_dec)
+    x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
+
+def user_update(file_name, public_key, old_file_tag):
+    file_tag = get_file_tag(file_name)
+    if old_file_tag=='N':
+        print('check for latest')
+    else:
+        print('update new file')
+    return 1
+
+def check_for_update(file_name, public_key):
+    #check the server for update
+    edge.check_fo_update
+    return 1
 
 public_key, private_key = generate_keys()
 public_key = rsa.PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)
 private_key = rsa.PrivateKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537, 1030691669318750359951625319862690475818347967117902605872939930367594308397554381247838360695330336552349907433970389960768509782742058080789448232712325826281082261178632239073798253718751096103441456539354111286400036129262946954889075051792123457429342509369899192140299157753644374884936706624123295044143642185, 144316483646245528065267241335886041264166327522302219260632995815227677664448673850105699878958127212618068955859752072987245918861275831575505446408281521548720709797, 11223597577550573967916132102918873794347730871873978637357031959131200754447345444825878496219616432817134464015955214999041127472681083882349565039)
-user_upload('test.txt','N', public_key, private_key)
+#user_upload('test.txt','N', public_key, private_key)
 #user_download('test.txt', public_key)
-
+#user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
+#check_for_update('test.txt',public_key)
