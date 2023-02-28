@@ -10,8 +10,8 @@ def check_file_tag_exists(file_tag):
     exists = db.check_file_tag(file_tag)
     return exists
 
-def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, metadata):
-    group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, metadata)
+def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, metadata):
+    group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, metadata)
     return group_name
 
 
@@ -19,8 +19,7 @@ def download_from_server(file_tag, public_key):
     val = db.get_ciphers(file_tag, str(public_key))
     if val == -1 :
         return -1 #No Access
-    cipher_2, cipher_3, metadata =val
-    return cipher_2, cipher_3, metadata
+    return val
    
 def check_access(file_tag, public_key):
     has_access = db.check_access(file_tag,str(public_key)) 
@@ -67,9 +66,24 @@ def check_time_hash(file_tag,public_key, time_val):
         print('User Added')
     return 1
 
-def save_block_vales(mod, file_tag, i):
-    db.save_block_vales(mod, file_tag, i)
+def save_block_vales(block_tag, file_tag):
+    db.save_block_vales(block_tag, file_tag)
     
+
+def check_block_exists(block_tag):
+    val = db.check_block_exists(block_tag)
+    return val
+
 def get_block_values(file_tag):
-    tokens, nos = db.get_block_values(file_tag)
-    return tokens, nos
+    tag_list = db.get_block_values(file_tag)
+    return tag_list
+
+def get_file_tag_of_block(block_tag):
+    file_tag_of_block = db.get_file_tag_of_block(block_tag)
+    return file_tag_of_block
+
+def get_index_of_block(block_tag,file_tag):
+    block_tags_string = get_block_values(file_tag)
+    block_tags = block_tags_string.split('-')
+    index = block_tags.index(block_tag)
+    return index

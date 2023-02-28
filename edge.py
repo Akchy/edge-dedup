@@ -21,7 +21,7 @@ def get_edge_rce_key():
     return get_random_bytes(16)
 
 def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, metadata):
-    block_tokens=[]
+    block_tags=[]
     for i in range (1,file_count):
         o_file_name = str(file_tag)+'_{}.bin'.format(i)
         block_name = 'block{}.bin'.format(i)
@@ -29,38 +29,46 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, me
 
         block_path = edge_output_folder_name+o_file_name
         mod = modulo_hash_file(block_path,prime2)
-        block_tokens.append(mod)
-        server.save_block_vales(mod, file_tag, i)
-        #Save the block tag in edge.
+        block_tags.append(mod)
+        val = server.check_block_exists(str(mod))
+        print(val)
+        if not val:
+            server.save_block_vales(str(mod), file_tag)
+            #Send only the unique ones.
 
-    block_level_dedup()
-    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, metadata)
+    block_tags_list= '-'.join(str(b) for b in block_tags)
+    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, metadata)
 
     # Saving Cipher2 and Edge Keys in a file.    
     with open('datas/cred.txt','w+') as file:
-        file.write('block_tokens= {}\n'.format(block_tokens))
+        file.write('block_tags= {}\n'.format(block_tags))
 
     return group_name
-
-def block_level_dedup():
-    return 1
 
 def download_from_edge(file_tag, public_key):
     val = server.download_from_server(file_tag, public_key)
     if val == -1:
         return -1 # No Access
-    cipher_2, cipher_3, metadata = val
+    cipher_2, cipher_3, block_tags, metadata = val
     metadata = metadata.split(',')
+    print(metadata)
     _, file_count = metadata
     file_count = file_count[:-1]
-    token_list , nos = server.get_block_values(file_tag)
+    tag_list_string= block_tags
+    tag_list = tag_list_string.split('-')
     for i in range (1,int(file_count)):
         block_name = 'block{}.bin'.format(i)
-
-
+        block_tag = tag_list[i-1]
+        file_tag_of_block = server.get_file_tag_of_block(block_tag) #define
+        if file_tag != file_tag_of_block:
+            index = server.get_index_of_block(block_tag,file_tag)+1 #define
+            block_suffix = file_tag_of_block
+            #fetch block
         #mod = modulo_hash_file(block_path,prime2)
-        
-        input_file_name = str(file_tag)+'_{}.bin'.format(i)
+        else:
+            index = i
+            block_suffix = file_tag
+        input_file_name = str(block_suffix)+'_{}.bin'.format(index)
         AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name, edge_output_down_folder_name,block_name,input_file_name)
         
     return cipher_2, cipher_3, metadata
