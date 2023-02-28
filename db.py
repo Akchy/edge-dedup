@@ -11,35 +11,35 @@ server_db = mysql.connector.connect(
 )
 
 
-def upload_file(file_tag, public_key, group,cipher_2,cipher_3,block_tags, metadata):
+def upload_file(file_tag, public_key, group,cipher_2,cipher_3,block_tags,cuckoo_blocks, metadata):
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
         print('Init Subsequent Uplaod')
     else:
-        insert_file(file_tag, public_key, group, cipher_2,cipher_3, block_tags, metadata)
+        insert_file(file_tag, public_key, group, cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
 
 
-def insert_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, metadata):
+def insert_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata):
     print('Init File Upload')
     cursor = server_db.cursor()
     tag =  file_tag
-    cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000), cipher_2 LONGTEXT, cipher_3 LONGTEXT, block_tags LONGTEXT, metadata LONGTEXT)")
+    cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000), cipher_2 LONGTEXT, cipher_3 LONGTEXT, block_tags LONGTEXT, cuckoo_blocks LONGTEXT, metadata LONGTEXT)")
     owner_table_name = create_owner_table(public_key)
     group_name='N'
     # Create version table
     version_table = create_version_table(file_tag)
         # Create version table if not exists 
     if group =='N':
-        insert_command = "insert into hash_table (file_tag, owner_table,version_table, cipher_2, cipher_3, block_tags, metadata) values (%s, %s, %s ,%s,%s,%s,%s)"
-        insert_values = (tag,owner_table_name,version_table, cipher_2, cipher_3,block_tags, metadata)
+        insert_command = "insert into hash_table (file_tag, owner_table,version_table, cipher_2, cipher_3, block_tags, cuckoo_blocks, metadata) values (%s, %s, %s ,%s,%s,%s,%s,%s)"
+        insert_values = (tag,owner_table_name,version_table, cipher_2, cipher_3,block_tags, cuckoo_blocks,metadata)
         cursor.execute(insert_command, insert_values)
         
     else:
         timestamp = get_timestamp()
         group_name = 'group_'+timestamp
-        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table, cipher_2, cipher_3,block_tags,  metadata) values (%s, %s, %s,%s,%s,%s,%s,%s,%s)"
+        insert_command = "insert into hash_table (file_tag, is_group, group_no ,owner_table,version_table, cipher_2, cipher_3,block_tags, cuckoo_blocks,  metadata) values (%s, %s, %s,%s,%s,%s,%s,%s,%s,%s)"
         is_group = 'Y'
-        insert_values= (tag,is_group, group_name,owner_table_name,version_table, cipher_2, cipher_3, block_tags,  metadata)
+        insert_values= (tag,is_group, group_name,owner_table_name,version_table, cipher_2, cipher_3, block_tags, cuckoo_blocks, metadata)
         cursor.execute(insert_command, insert_values)
         
     server_db.commit()
@@ -248,6 +248,11 @@ def get_file_tag_of_block(block_tag):
     myresult = cursor.fetchone()
     return myresult[0]
 
+def get_cuckoo_blocks(file_tag):
+    cursor = server_db.cursor()
+    cursor.execute("select cuckoo_blocks from hash_table where file_tag=%s",(file_tag,))
+    myresult = cursor.fetchone()
+    return myresult[0]
 
 public_key = "PublicKey(0811894381714228791437715199125138441053188238781309785778539001753982230331889470118071352286003534767147063081280636475336316635332185292871419056936721970666851031602015612498812180909637220058492502528579123543268093376750727858037728412193990038676876669051466640315549098928940551851457399205667681378300824161, 65537)"
 file_tag = "79289504320816749656312002797686303750053270932755277852798226741834612071265"

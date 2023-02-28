@@ -10,8 +10,8 @@ def check_file_tag_exists(file_tag):
     exists = db.check_file_tag(file_tag)
     return exists
 
-def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, metadata):
-    group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, metadata)
+def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata):
+    group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
     return group_name
 
 
@@ -38,10 +38,12 @@ def check_access(file_tag, public_key):
             challenge_blocks+=1
     return blocks
 
-def blocks_to_server_cuckoo(block_keys, public_key):
+def blocks_to_server_cuckoo(file_tag, block_keys, public_key):
     flag =0
+    blocks_string = db.get_cuckoo_blocks(file_tag) 
+    blocks = blocks_string.split('-')
     for i in block_keys:
-        is_avail = check_cuckoo(i)
+        is_avail = check_cuckoo(blocks,i)
         if not is_avail:
             flag = 1
             break
