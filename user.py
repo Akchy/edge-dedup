@@ -45,6 +45,8 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
         #save group name in a file
         with open('datas/group_name.txt', 'a+') as file:
             file.write('\n\ngroup_name= {}'.format(group_name))
+        
+        print('User: File Uploaded\nPlease save the file tag mentioned below: \nFile Tag: {}'.format(file_tag))
 
 def get_file_tag(file_name):
     return modulo_hash_file(file_name,prime1)
@@ -92,7 +94,7 @@ def user_download(file_name,public_key):
     else:
         val =edge.download_from_edge(file_tag, public_key)
     if val == -1:
-        print('No Access to the file')
+        print('User: No Access to the file')
         return -1
     cipher_2_list, cipher_3, metadata =val
     save_file_name, file_count = metadata
@@ -110,15 +112,15 @@ def user_download(file_name,public_key):
         aes_decrypt_file(block_key, iv, user_down_input_folder_name, user_down_output_folder_name,file_name)
     save_file_name = 'downloaded_'+save_file_name
     merge_blocks(user_down_output_folder_name,save_file_name)
-    print('File downloaded and saved under the name: ',save_file_name)
+    print('User: File downloaded and saved under the name: ',save_file_name)
 
 def subs_upload(file_name, file_tag, public_key, private_key):
     
     value = edge.check_access_server(file_tag,public_key)
     if not value:
-        print("Same Person")
+        print("User: Same Person")
         return 0
-    print('Different Person')
+    print('User: Different Person')
     #'''
 
     if not os.path.exists('subs_blocks'):
@@ -145,25 +147,56 @@ def check_for_update(file_name, display='Y'):
     if display=='N':
         return val
     if val==0:
-        print('Same No Update')
+        print('User: Same No Update')
     elif val == -1:
-        print('No File in server, Upload as a New File')
+        print('User: No File in server, Upload as a New File')
     else:
-        print('A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val[0]))
-        print('\nPlease use the below mentioned file tag while updating: \nOld File Tag: {}\n'.format(file_tag))
+        print('User: A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val[0]))
+        print('\nUser: Please use the below mentioned file tag while updating: \nOld File Tag: {}\n'.format(file_tag))
+
+def add_user(file_name, public_key, new_public_key):
+    file_tag = get_file_tag(file_name)
+    val = edge.add_user_server(file_tag, public_key, new_public_key)
+    if val ==1:
+        print('User: User Added Successfully')
+    elif val == -1:
+        print('User: No File Found')
+    elif val == -2:
+        print('User: No Access Found')
+    elif val == -3:
+        print('User: User is not an Admin')
+    elif val == -4:
+        print('User: New User Already Present')
+
+def delete_user(file_name, public_key, new_public_key):
+    file_tag = get_file_tag(file_name)
+    val = edge.delete_user_server(file_tag, public_key, new_public_key)
+    if val ==1:
+        print('User: User Deleted Successfully')
+    elif val == -1:
+        print('User: No File Found')
+    elif val == -2:
+        print('User: No Access Found')
+    elif val == -3:
+        print('User: User is not an Admin')
+    elif val == -4:
+        print('User: New User Already Deleted')
+    
 
 #public_key, private_key = generate_keys()
 public_key = rsa.PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)
 private_key = rsa.PrivateKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537, 1030691669318750359951625319862690475818347967117902605872939930367594308397554381247838360695330336552349907433970389960768509782742058080789448232712325826281082261178632239073798253718751096103441456539354111286400036129262946954889075051792123457429342509369899192140299157753644374884936706624123295044143642185, 144316483646245528065267241335886041264166327522302219260632995815227677664448673850105699878958127212618068955859752072987245918861275831575505446408281521548720709797, 11223597577550573967916132102918873794347730871873978637357031959131200754447345444825878496219616432817134464015955214999041127472681083882349565039)
-#public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
+new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 #private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'ieee.png'
+file_name = 'test.txt'
 is_group = 'Y'
 is_update= 'N'
 old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-#user_upload(file_name,is_group, public_key, private_key,is_update, old_file_tag)
+#user_upload(file_name,is_group, public_key, private_key)
 
-user_download(file_name, public_key)
+#user_download(file_name, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
+
+delete_user(file_name, public_key, new_public_key)

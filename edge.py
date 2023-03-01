@@ -89,3 +89,11 @@ def check_time_hash_server(file_tag, public_key, time_dec):
 def check_fo_update_server(file_tag):
     val = server.check_fo_update_server(file_tag)
     return val
+
+def add_user_server(file_tag, public_key, new_public_key):
+    val = server.add_user_server(file_tag, public_key, new_public_key)
+    return val
+
+def delete_user_server(file_tag, public_key, new_public_key):
+    val = server.delete_user_server(file_tag, public_key, new_public_key)
+    return val

@@ -70,8 +70,9 @@ def check_time_hash(file_tag,public_key, time_val):
         return -1 # No time saved for public key
     if time_val == val:
         print('User Verified')
-        db.add_owner(file_tag, str(public_key))
-        print('User Added')
+        added = db.sub_upload_add_owner(file_tag, str(public_key))
+        if added!= -1:
+            print('User Added')
     return 1
 
 def save_block_vales(block_tag, file_tag):
@@ -98,4 +99,12 @@ def get_index_of_block(block_tag,file_tag):
 
 def check_fo_update_server(file_tag):
     val = db.get_latest_file_tag(file_tag)
+    return val
+
+def add_user_server(file_tag, public_key, new_public_key):
+    val = db.add_owner(file_tag, public_key, new_public_key)
+    return val
+
+def delete_user_server(file_tag, public_key, new_public_key):
+    val = db.delete_owner(file_tag, public_key, new_public_key)
     return val
