@@ -1,15 +1,8 @@
 # Importing module
-import mysql.connector
 import datetime
+import db_connect
 
-# Creating connection object
-server_db = mysql.connector.connect(
-	host = "localhost",
-	user = "root",
-	password = "",
-    database = "server"
-)
-
+server_db = db_connect.db
 
 def upload_file(file_tag, public_key, group,cipher_2,cipher_3,block_tags,cuckoo_blocks, metadata):
     file_exist = check_file_tag(file_tag)
