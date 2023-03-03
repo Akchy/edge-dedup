@@ -193,10 +193,10 @@ file_name = 'test.txt'
 is_group = 'Y'
 is_update= 'N'
 old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-#user_upload(file_name,is_group, public_key, private_key)
+user_upload(file_name,is_group, public_key, private_key)
 
 #user_download(file_name, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 
-delete_user(file_name, public_key, new_public_key)
+#delete_user(file_name, public_key, new_public_key)

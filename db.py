@@ -3,7 +3,10 @@ import datetime
 import db_connect
 
 server_db = db_connect.db
-
+cursor = server_db.cursor()
+cursor.execute("create table if not exists hash_table (id INT AUTO_INCREMENT PRIMARY KEY, file_tag VARCHAR(255), is_group CHAR(1) DEFAULT 'N', group_no VARCHAR(1000), owner_table LONGTEXT, version_table VARCHAR(1000), cipher_2 LONGTEXT, cipher_3 LONGTEXT, block_tags LONGTEXT, cuckoo_blocks LONGTEXT, metadata LONGTEXT)")
+cursor.execute("create table if not exists block_table (id INT AUTO_INCREMENT PRIMARY KEY, block_tag LONGTEXT, file_tag VARCHAR(255))")
+    
 def upload_file(file_tag, public_key, group,cipher_2,cipher_3,block_tags,cuckoo_blocks, metadata):
     file_exist = check_file_tag(file_tag)
     if file_exist==1:
