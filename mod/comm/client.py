@@ -4,7 +4,7 @@ from datetime import datetime
 HEADER = 64
 PORT = 5050
 FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "!DISCONNECT-Out"
+DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
 SERVER = "10.0.0.1"
 ADDR = (SERVER, PORT)
 
@@ -27,11 +27,9 @@ def send(msg):
 
 key_list = ['key','hello there user with Public Key']
 key_string = '-'.join(key_list)
-#file_tag_list = ['tag','12345346']
-file_tag_list = ['tag']
-val = send(key_string)
-file_tag_list.append(val)
+file_tag_list = ['tag','12345346']
 file_tag_string = '-'.join(file_tag_list)
-send(file_tag_string)
+#file_tag_list = ['tag']
+send(key_string)
 
 send(DISCONNECT_MESSAGE)
