@@ -18,18 +18,53 @@ def send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
-    val =client.recv(2048).decode(FORMAT)
-    now = datetime.now()
-
+    #val =client.recv(2048).decode(FORMAT)
+    
     #current_time = now.strftime("%H:%M:%S")
-    print(f'{now}: {val}')
-    return val
+    #print(f'{val}')
+    #return val
 
-key_list = ['key','hello there user with Public Key']
-key_string = '-'.join(key_list)
-file_tag_list = ['tag','12345346']
-file_tag_string = '-'.join(file_tag_list)
-#file_tag_list = ['tag']
-send(key_string)
 
-send(DISCONNECT_MESSAGE)
+def send_text(key, str):
+    list = [key,str]
+    l_str = '-'.join(list)
+    send(l_str)
+    
+def send_file(filename):
+    send_file_name_list = ['send_file', filename]
+    send_file_name_string = '-'.join(send_file_name_list)
+    send(send_file_name_string)
+
+    file_socket = socket.socket()
+
+    # connect to server on file transfer port 8001
+    file_socket.connect(('localhost', 8001))
+
+    # send file contents to server
+    with open('cc.txt', 'rb') as f:
+        data = f.read(1024)
+        while data:
+            file_socket.send(data)
+            data = f.read(1024)
+
+    # close file transfer socket
+    file_socket.close()
+ 
+def get_file(filename):
+    get_file_name_list = ['get_file', filename]
+    get_file_name_string = '-'.join(get_file_name_list)
+    send(get_file_name_string)
+
+    # receive file contents from server and save to disk
+    with open(filename, 'wb') as f:
+        data = client.recv(1024)
+        while data:
+            f.write(data)
+            data = client.recv(1024)
+
+#send_text('tag','hello there user with Public Key')
+
+#send_file('cc.txt')
+
+#get_file('ss.txt')
+client.close()
