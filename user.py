@@ -1,7 +1,6 @@
 # Here's the code for user
 import rsa
 import edge
-import server
 from mod.enc.aes import *
 from mod.modulo_hash import *
 from mod.enc.sarce import get_rce_key
