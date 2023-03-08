@@ -1,110 +1,84 @@
-import db
-import random
-import datetime
-from mod.enc.rsa_keys import rsa_encrypt
-from mod.cuckoo import check_cuckoo
-from mod.enc.rsa_keys import generate_keys
+import socket 
+import threading
+from datetime import datetime
+
+HEADER = 64
+PORT = 5050
+SERVER = socket.gethostname()
+ADDR = ('', PORT)
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
+def handle_client(conn, addr):
+    connected = True
+    #while connected:
+    msg_length = conn.recv(HEADER).decode(FORMAT)
+    if msg_length:
+        msg_length = int(msg_length)
+        msg = conn.recv(msg_length).decode(FORMAT)
+        if msg == DISCONNECT_MESSAGE:
+            connected = False
+        str_to_list = msg.split('-')
+        command = str_to_list[0]
+        val = str_to_list[1]
+        check_command(command,val, conn)
+        #conn.send("Msg received".encode(FORMAT))
+    conn.close()
 
 
-def check_file_tag_exists(file_tag):
-    exists = db.check_file_tag(file_tag)
-    return exists
+def check_command(argument,val, conn):
+    match argument:
+        case 'tag':
+            get_rce(val)
+        case 'send_file':
+            get_file(val, conn)
+        case 'get_file':
+            send_file(val, conn)
 
-def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata, is_update, old_file_tag):
-    if is_update == 'N':
-        group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
-    else:
-        group_name = update_file(old_file_tag,file_tag, public_key, cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
-    return group_name
+def get_rce(val):
+    print(f"Here's rce value from client: {val}")
 
-def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata):
-    db.update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
-    return 1
+def get_file(filename, file_conn):
+    '''
+    file_socket = socket.socket()
 
-def download_from_server(file_tag, public_key):
-    val = db.get_ciphers(file_tag, str(public_key))
-    if val == -1 :
-        return -1 #No Access
-    return val
-   
-def check_access(file_tag, public_key):
-    has_access = db.check_access(file_tag,str(public_key)) 
-    if has_access:
-        return False
-    meta = db.get_meta(file_tag)
-    metadata = meta.split(',')
-    file_name,file_count = metadata
-    file_count = int(file_count[:-1])
-    challenge_blocks=0
-    blocks = []
-    while challenge_blocks!=3:
-        num = random.randint(1,file_count-1)
-        if num not in blocks:
-            blocks.append(num)
-            challenge_blocks+=1
-    return blocks
+    # bind file socket to localhost and port 8001
+    file_socket.bind(('', 5051))
 
-def blocks_to_server_cuckoo(file_tag, block_keys, public_key):
-    flag =0
-    blocks_string = db.get_cuckoo_blocks(file_tag) 
-    blocks = blocks_string.split('-')
-    for i in block_keys:
-        is_avail = check_cuckoo(blocks,i)
-        if not is_avail:
-            flag = 1
-            break
-    if(flag==1):
-        print('Cuckoo Filter Failed')
-        return -1
+    # listen for incoming connections on file socket
+    file_socket.listen()
 
-    timestamp = datetime.datetime.now().timestamp()
-    string_time = str(timestamp)
-    byte_time = string_time.encode()
-    time_hash = rsa_encrypt(public_key,byte_time)  
-    db.save_time(str(public_key), string_time)
-    return time_hash
+    # accept incoming file transfer connection
+    file_conn, file_addr = file_socket.accept()
 
-def check_time_hash(file_tag,public_key, time_val):
-    val = db.get_time_hash(str(public_key))
-    if val == -1:
-        return -1 # No time saved for public key
-    if time_val == val:
-        print('User Verified')
-        added = db.sub_upload_add_owner(file_tag, str(public_key))
-        if added!= -1:
-            print('User Added')
-    return 1
+    #'''
+    # receive file contents from client and save to disk
+    with open(filename, 'wb') as f:
+        data = file_conn.recv(1024)
+        while data:
+            f.write(data)
+            data = file_conn.recv(1024)
 
-def save_block_vales(block_tag, file_tag):
-    db.save_block_vales(block_tag, file_tag)
-    
+    # close file transfer connection and socket
+    #file_conn.close()
+    #file_socket.close()
 
-def check_block_exists(block_tag):
-    val = db.check_block_exists(block_tag)
-    return val
+def send_file(filename, file_conn):
+    with open(filename, 'rb') as f:
+        data = f.read(1024)
+        while data:
+            file_conn.send(data)
+            data = f.read(1024)
 
-def get_block_values(file_tag):
-    tag_list = db.get_block_values(file_tag)
-    return tag_list
 
-def get_file_tag_of_block(block_tag):
-    file_tag_of_block = db.get_file_tag_of_block(block_tag)
-    return file_tag_of_block
+def start():
+    server.listen()
+    print(f"[LISTENING] Server is listening on {SERVER}")
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
 
-def get_index_of_block(block_tag,file_tag):
-    block_tags_string = get_block_values(file_tag)
-    block_tags = block_tags_string.split('-')
-    index = block_tags.index(block_tag)
-    return index
-
-def check_fo_update_server(file_tag):
-    val = db.get_latest_file_tag(file_tag)
-    return val
-
-def add_user_server(file_tag, public_key, new_public_key):
-    val = db.add_owner(file_tag, public_key, new_public_key)
-    return val
-
-def delete_user_server(file_tag, public_key, new_public_key):
-    val = db.delete_owner(file_tag, public_key, new_public_key)
-    return val
+start()

@@ -21,8 +21,6 @@ file_size = 1024
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
         os.mkdir('files')
-if not os.path.exists('datas'):
-        os.mkdir('datas')
 
 def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
@@ -40,10 +38,6 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
         cipher_2_list= '-'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '-'.join(str(c) for c in cuckoo_blocks)
         group_name = edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
-
-        #save group name in a file
-        with open('datas/group_name.txt', 'a+') as file:
-            file.write('\n\ngroup_name= {}'.format(group_name))
         
         print('User: File Uploaded\nPlease save the file tag mentioned below: \nFile Tag: {}'.format(file_tag))
 
@@ -71,17 +65,9 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     cipher_3 = int_rce_key ^ prime2
     
     # Saving User's Public and Private keys in a file.
-    with open('datas/rsa.txt','w+') as file:
+    with open('files/rsa.txt','w+') as file:
         file.write('\n\npublic= {} \nprivate= {}'.format(public_key,private_key))
 
-    with open('datas/file_tag.txt', 'a+') as file:
-        file.write('\n\nfile_tag= {}'.format(file_tag))
-
-    with open('datas/metadata.txt', 'a+') as file:
-        file.write('\n\nfile_name= {}\nfile_count= {}'.format(file_name, file_count))
-
-    with open('datas/ciphers.txt', 'a+') as file:
-        file.write('\n\ncipher_2= {}\ncipher_3= {}'.format(cipher_2,cipher_3))
 
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
