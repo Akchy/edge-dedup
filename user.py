@@ -25,9 +25,11 @@ if not os.path.exists('files'):
 def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
     # RCE Key Generation
+    #Comm: Get RCE Key
     edge_rce_key = edge.get_edge_rce_key()
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
+    #Comm: Get Check File tag
     file_exists = edge.check_file_tag_exists_server(file_tag)
     if is_update=='N' and file_exists == True:
         subs_upload(file_name, file_tag,public_key,private_key)
@@ -37,6 +39,7 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
         metadata = [file_name,file_count]
         cipher_2_list= '-'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '-'.join(str(c) for c in cuckoo_blocks)
+        #Comm: Send File
         group_name = edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
         
         print('User: File Uploaded\nPlease save the file tag mentioned below: \nFile Tag: {}'.format(file_tag))
@@ -75,9 +78,11 @@ def user_download(file_name,public_key):
     file_tag = get_file_tag(file_name)
     val_tag = check_for_update(file_name,'N')
     if val_tag!=0 and val_tag !=-1:
-        val =edge.download_from_edge(val_tag[0], public_key)
+        tag = val_tag[0]        
     else:
-        val =edge.download_from_edge(file_tag, public_key)
+        tag = file_tag
+    #Comm: Get File
+    val =edge.download_from_edge(tag, public_key)
     if val == -1:
         print('User: No Access to the file')
         return -1
@@ -101,6 +106,7 @@ def user_download(file_name,public_key):
 
 def subs_upload(file_name, file_tag, public_key, private_key):
     
+    #Comm: Get access
     value = edge.check_access_server(file_tag,public_key)
     if not value:
         print("User: Same Person")
@@ -118,16 +124,17 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         file_path = user_sub_input_folder_name+file_name
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
-    
+    #Comm: Get check cuckoo
     val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
     if val != -1:
         time_dec = rsa_decypt(private_key,val)
+        #Comm: Get Ceck time
         x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
 
 def check_for_update(file_name, display='Y'):
-    #check the server for update
     file_tag = get_file_tag(file_name)
+    #Comm: Get Update
     val = edge.check_fo_update_server(file_tag)
     if display=='N':
         return val
@@ -141,6 +148,7 @@ def check_for_update(file_name, display='Y'):
 
 def add_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
+    #Comm: Add User
     val = edge.add_user_server(file_tag, public_key, new_public_key)
     if val ==1:
         print('User: User Added Successfully')
@@ -155,6 +163,7 @@ def add_user(file_name, public_key, new_public_key):
 
 def delete_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
+    #Comm: Delete User
     val = edge.delete_user_server(file_tag, public_key, new_public_key)
     if val ==1:
         print('User: User Deleted Successfully')
