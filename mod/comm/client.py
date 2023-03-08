@@ -5,7 +5,7 @@ HEADER = 64
 PORT = 5050
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
-SERVER = "10.0.0.1"
+SERVER = "10.0.0.2"
 ADDR = (SERVER, PORT)
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,20 +35,20 @@ def send_file(filename):
     send_file_name_string = '-'.join(send_file_name_list)
     send(send_file_name_string)
 
-    file_socket = socket.socket()
+    #file_socket = socket.socket()
 
     # connect to server on file transfer port 8001
-    file_socket.connect(('localhost', 8001))
+    #file_socket.connect((SERVER, 5051))
 
     # send file contents to server
     with open('cc.txt', 'rb') as f:
         data = f.read(1024)
         while data:
-            file_socket.send(data)
+            client.send(data)
             data = f.read(1024)
 
     # close file transfer socket
-    file_socket.close()
+    #file_socket.close()
  
 def get_file(filename):
     get_file_name_list = ['get_file', filename]
@@ -64,7 +64,7 @@ def get_file(filename):
 
 #send_text('tag','hello there user with Public Key')
 
-#send_file('cc.txt')
+send_file('cc.txt')
 
 #get_file('ss.txt')
 client.close()
