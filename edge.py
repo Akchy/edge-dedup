@@ -2,6 +2,7 @@ import server
 import mod.enc.aes as AES
 from mod.modulo_hash import *
 from Crypto.Random import get_random_bytes
+import comm.client as comm
 
 edge_input_folder_name = 'files/encrypt_blocks/'
 edge_output_folder_name = 'files/edge_encrypt_blocks/'
@@ -27,9 +28,17 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         mod = modulo_hash_file(block_path,prime2)
         block_tags.append(mod)
         #Comm: Get block exists
+        command = 'check_block_exists'
+        arg = str(mod)
+        #val = comm.send_text(command,arg)
         val = server.check_block_exists(str(mod))
         if not val:
             #Comm: Save block 
+            command = 'save_block_vales'
+            l = [str(mod),file_tag]
+            s = '-'.join(l)
+            arg = s
+            #val = comm.send_text(command,arg)
             server.save_block_vales(str(mod), file_tag)
             #Send only the unique ones.
 
@@ -54,9 +63,17 @@ def download_from_edge(file_tag, public_key):
         block_name = 'block{}.bin'.format(i)
         block_tag = tag_list[i-1]
         #Comm: Get file tag
+        command = 'get_file_tag_of_block'
+        arg = block_tag
+        #file_tag_of_block = comm.send_text(command,arg)
         file_tag_of_block = server.get_file_tag_of_block(block_tag) #define
         if file_tag != file_tag_of_block:
             #Comm: get index of block
+            command = 'get_index_of_block'
+            l = [block_tag,file_tag]
+            s = '-'.join(l)
+            arg = s
+            #index = comm.send_text(command,arg)
             index = server.get_index_of_block(block_tag,file_tag)+1 #define
             block_suffix = file_tag_of_block
             #fetch block

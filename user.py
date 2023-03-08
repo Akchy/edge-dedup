@@ -26,10 +26,16 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
     file_tag = get_file_tag(file_name)
     # RCE Key Generation
     #Comm: Get RCE Key
+    command = 'get_edge_rce_key'
+    arg = ''
+    #edge_rce_key = comm.send_text(command,arg)
     edge_rce_key = edge.get_edge_rce_key()
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
     #Comm: Get Check File tag
+    command = 'check_file_tag_exists_server'
+    arg = file_tag
+    #file_exists = comm.send_text(command,arg)
     file_exists = edge.check_file_tag_exists_server(file_tag)
     if is_update=='N' and file_exists == True:
         subs_upload(file_name, file_tag,public_key,private_key)
@@ -107,6 +113,11 @@ def user_download(file_name,public_key):
 def subs_upload(file_name, file_tag, public_key, private_key):
     
     #Comm: Get access
+    command = 'check_access_server'
+    l = [file_tag,public_key]
+    s = '-'.join(l)
+    arg = s
+    #value = comm.send_text(command,arg)
     value = edge.check_access_server(file_tag,public_key)
     if not value:
         print("User: Same Person")
@@ -125,16 +136,29 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
     #Comm: Get check cuckoo
+    command = 'blocks_to_server_cuckoo_server'
+    l = [file_tag,block_keys,public_key]
+    s = '-'.join(l)
+    arg = s
+    #val = comm.send_text(command,arg)
     val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
     if val != -1:
         time_dec = rsa_decypt(private_key,val)
         #Comm: Get Ceck time
+        command = 'check_time_hash_server'
+        l = [file_tag,public_key,time_dec]
+        s = '-'.join(l)
+        arg = s
+        #x = comm.send_text(command,arg)
         x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
 
 def check_for_update(file_name, display='Y'):
     file_tag = get_file_tag(file_name)
     #Comm: Get Update
+    command = 'check_fo_update_server'
+    arg = file_tag
+    #val = comm.send_text(command,arg)
     val = edge.check_fo_update_server(file_tag)
     if display=='N':
         return val
@@ -149,6 +173,11 @@ def check_for_update(file_name, display='Y'):
 def add_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
     #Comm: Add User
+    command = 'add_user_server'
+    l = [file_tag,public_key, new_public_key]
+    s = '-'.join(l)
+    arg = s
+    #val = comm.send_text(command,arg)
     val = edge.add_user_server(file_tag, public_key, new_public_key)
     if val ==1:
         print('User: User Added Successfully')
@@ -164,6 +193,11 @@ def add_user(file_name, public_key, new_public_key):
 def delete_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
     #Comm: Delete User
+    command = 'delete_user_server'
+    l = [file_tag,public_key, new_public_key]
+    s = '-'.join(l)
+    arg = s
+    #val = comm.send_text(command,arg)
     val = edge.delete_user_server(file_tag, public_key, new_public_key)
     if val ==1:
         print('User: User Deleted Successfully')

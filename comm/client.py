@@ -11,7 +11,7 @@ ADDR = (SERVER, PORT)
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(ADDR)
 
-def send(msg):
+def __send(msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
@@ -28,12 +28,12 @@ def send(msg):
 def send_text(key, str):
     list = [key,str]
     l_str = '-'.join(list)
-    send(l_str)
+    __send(l_str)
     
 def send_file(filename):
     send_file_name_list = ['send_file', filename]
     send_file_name_string = '-'.join(send_file_name_list)
-    send(send_file_name_string)
+    __send(send_file_name_string)
 
     #file_socket = socket.socket()
 
@@ -53,7 +53,7 @@ def send_file(filename):
 def get_file(filename):
     get_file_name_list = ['get_file', filename]
     get_file_name_string = '-'.join(get_file_name_list)
-    send(get_file_name_string)
+    __send(get_file_name_string)
 
     # receive file contents from server and save to disk
     with open(filename, 'wb') as f:
