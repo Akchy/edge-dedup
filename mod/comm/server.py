@@ -41,11 +41,11 @@ def get_rce(val):
     print(f"Here's rce value from client: {val}")
 
 def get_file(filename, file_conn):
-
+    '''
     file_socket = socket.socket()
 
     # bind file socket to localhost and port 8001
-    file_socket.bind(('localhost', 8001))
+    file_socket.bind(('', 5051))
 
     # listen for incoming connections on file socket
     file_socket.listen()
@@ -53,6 +53,7 @@ def get_file(filename, file_conn):
     # accept incoming file transfer connection
     file_conn, file_addr = file_socket.accept()
 
+    #'''
     # receive file contents from client and save to disk
     with open(filename, 'wb') as f:
         data = file_conn.recv(1024)
@@ -61,8 +62,8 @@ def get_file(filename, file_conn):
             data = file_conn.recv(1024)
 
     # close file transfer connection and socket
-    file_conn.close()
-    file_socket.close()
+    #file_conn.close()
+    #file_socket.close()
 
 def send_file(filename, file_conn):
     with open(filename, 'rb') as f:
