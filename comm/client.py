@@ -18,10 +18,9 @@ def __send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
-    #val =client.recv(2048).decode(FORMAT)
+    val =client.recv(1024).decode(FORMAT)
     
-    #current_time = now.strftime("%H:%M:%S")
-    #print(f'{val}')
+    print(f'{val}')
     #return val
 
 
@@ -62,9 +61,9 @@ def get_file(filename):
             f.write(data)
             data = client.recv(1024)
 
-#send_text('tag','hello there user with Public Key')
+send_text('tag','hello there user with Public Key')
 
-send_file('cc.txt')
+#send_file('cc.txt')
 
 #get_file('ss.txt')
 client.close()
