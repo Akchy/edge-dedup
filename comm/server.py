@@ -23,25 +23,22 @@ def handle_client(conn, addr):
         str_to_list = msg.split('-')
         command = str_to_list[0]
         val = str_to_list[1]
-        value = check_command(command,val, conn)
-        conn.send(f"return-{value}".encode(FORMAT))
+        check_command(command,val, conn)
+        #conn.send("Msg received".encode(FORMAT))
     conn.close()
 
 
-def check_command(argument,arg, conn):
-    val = 1
+def check_command(argument,val, conn):
     match argument:
         case 'tag':
-            val = get_rce(arg)
+            get_rce(val)
         case 'send_file':
-            get_file(arg, conn)
+            get_file(val, conn)
         case 'get_file':
-            send_file(arg, conn)
-    return val
+            send_file(val, conn)
 
 def get_rce(val):
     print(f"Here's rce value from client: {val}")
-    return 'Davisj'
 
 def get_file(filename, file_conn):
     '''
@@ -77,7 +74,7 @@ def send_file(filename, file_conn):
 
 
 def start():
-    server.listen(100)
+    server.listen()
     print(f"[LISTENING] Server is listening on {SERVER}")
     while True:
         conn, addr = server.accept()
