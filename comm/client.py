@@ -5,8 +5,8 @@ HEADER = 64
 PORT = 5050
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
-SERVER = "10.0.0.2"
-ADDR = (SERVER, PORT)
+EDGE = "10.0.0.2"
+ADDR = (EDGE, PORT)
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(ADDR)
@@ -18,9 +18,6 @@ def __send(msg):
     send_length += b' ' * (HEADER - len(send_length))
     client.send(send_length)
     client.send(message)
-    val =client.recv(1024).decode(FORMAT)
-    
-    print(f'{val}')
     #return val
 
 
@@ -28,26 +25,19 @@ def send_text(key, str):
     list = [key,str]
     l_str = '-'.join(list)
     __send(l_str)
+    val=client.recv(1024).decode(FORMAT)
+    print(f'{val}')
     
 def send_file(filename):
     send_file_name_list = ['send_file', filename]
     send_file_name_string = '-'.join(send_file_name_list)
     __send(send_file_name_string)
 
-    #file_socket = socket.socket()
-
-    # connect to server on file transfer port 8001
-    #file_socket.connect((SERVER, 5051))
-
-    # send file contents to server
-    with open('cc.txt', 'rb') as f:
+    with open(filename, 'rb') as f:
         data = f.read(1024)
         while data:
             client.send(data)
             data = f.read(1024)
-
-    # close file transfer socket
-    #file_socket.close()
  
 def get_file(filename):
     get_file_name_list = ['get_file', filename]
@@ -61,9 +51,9 @@ def get_file(filename):
             f.write(data)
             data = client.recv(1024)
 
-send_text('tag','hello there user with Public Key')
+#send_text('tag','hello there user with Public Key')
 
-#send_file('cc.txt')
+send_file('cc.txt')
 
 #get_file('ss.txt')
 client.close()
