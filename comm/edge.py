@@ -30,7 +30,8 @@ def handle_user(conn, addr):
         command = str_to_list[0]
         val = str_to_list[1]
         value = check_command(command,val,msg,conn)
-        conn.send(f"return-{value}".encode(FORMAT))
+        if value != 1:
+            conn.send(f"return-{value}".encode(FORMAT))
     conn.close()
 
 
@@ -47,8 +48,9 @@ def check_command(argument,arg,msg,conn):
             val =server.recv(2048).decode(FORMAT)
         case 'send_file':
             get_file(arg, conn)
-            send_file_to_server('ss.txt')
+            send_file_to_server(arg)
         case 'get_file':
+            get_file_from_server(arg,conn)
             send_file(arg, conn)
         case default:
             print("something")
@@ -70,12 +72,11 @@ def send_file(filename, file_conn):
 
 
 def send_file_to_server(filename):
-
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.connect(SERVER_ADDR)
     send_file_name_list = ['send_file',filename]
     send_file_name_string = '-'.join(send_file_name_list)
-    x =__send_to_server(send_file_name_string,server)
+    __send_to_server(send_file_name_string,server)
 
     with open(filename, 'rb') as f:
         data = f.read(1024)
@@ -84,6 +85,18 @@ def send_file_to_server(filename):
             data = f.read(1024)
     server.close()
 
+def get_file_from_server(filename,conn):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.connect(SERVER_ADDR)
+    get_file_name_list = ['get_file', filename]
+    get_file_name_string = '-'.join(get_file_name_list)
+    __send_to_server(get_file_name_string,server)
+    with open(filename, 'wb') as f:
+        data = server.recv(1024)
+        while data:
+            f.write(data)
+            data = server.recv(1024) 
+    server.close()
 
 def __send_to_server(msg,server_socket):
     message = msg.encode(FORMAT)

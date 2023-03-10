@@ -24,7 +24,8 @@ def handle_client(conn, addr):
         command = str_to_list[0]
         val = str_to_list[1]
         value = check_command(command,val, conn)
-        conn.send(f"return-{value}".encode(FORMAT))
+        if value != 1:
+            conn.send(f"return-{value}".encode(FORMAT))
     conn.close()
 
 
