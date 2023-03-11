@@ -2,7 +2,6 @@ import server
 import mod.enc.aes as AES
 from mod.modulo_hash import *
 from Crypto.Random import get_random_bytes
-import comm.client as comm
 
 edge_input_folder_name = 'files/encrypt_blocks/'
 edge_output_folder_name = 'files/edge_encrypt_blocks/'
@@ -35,7 +34,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         if not val:
             #Comm: Save block 
             command = 'save_block_vales'
-            l = [str(mod),file_tag]
+            l = [str(mod),str(file_tag)]
             s = '-'.join(l)
             arg = s
             #val = comm.send_text(command,arg)
