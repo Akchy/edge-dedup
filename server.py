@@ -23,7 +23,7 @@ def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_
 def download_from_server(file_tag, public_key):
     val = db.get_ciphers(file_tag, str(public_key))
     if val == -1 :
-        return -1 #No Access
+        return '-1' #No Access
     return val
    
 def check_access(file_tag, public_key):
@@ -43,10 +43,11 @@ def check_access(file_tag, public_key):
             challenge_blocks+=1
     return blocks
 
-def blocks_to_server_cuckoo(file_tag, block_keys, public_key):
+def blocks_to_server_cuckoo(file_tag, block_keys_str, public_key):
     flag =0
     blocks_string = db.get_cuckoo_blocks(file_tag) 
     blocks = blocks_string.split('-')
+    block_keys = block_keys_str.split('/')
     for i in block_keys:
         is_avail = check_cuckoo(blocks,i)
         if not is_avail:
@@ -54,7 +55,7 @@ def blocks_to_server_cuckoo(file_tag, block_keys, public_key):
             break
     if(flag==1):
         print('Cuckoo Filter Failed')
-        return -1
+        return '-1'
 
     timestamp = datetime.datetime.now().timestamp()
     string_time = str(timestamp)
@@ -66,13 +67,13 @@ def blocks_to_server_cuckoo(file_tag, block_keys, public_key):
 def check_time_hash(file_tag,public_key, time_val):
     val = db.get_time_hash(str(public_key))
     if val == -1:
-        return -1 # No time saved for public key
+        return '-1' # No time saved for public key
     if time_val == val:
         print('User Verified')
         added = db.sub_upload_add_owner(file_tag, str(public_key))
         if added!= -1:
             print('User Added')
-    return 1
+    return '1'
 
 def save_block_vales(block_tag, file_tag):
     db.save_block_vales(block_tag, file_tag)
@@ -96,14 +97,14 @@ def get_index_of_block(block_tag,file_tag):
     index = block_tags.index(block_tag)
     return index
 
-def check_fo_update_server(file_tag):
+def check_for_update(file_tag):
     val = db.get_latest_file_tag(file_tag)
     return val
 
-def add_user_server(file_tag, public_key, new_public_key):
+def add_user(file_tag, public_key, new_public_key):
     val = db.add_owner(file_tag, public_key, new_public_key)
     return val
 
-def delete_user_server(file_tag, public_key, new_public_key):
+def delete_user(file_tag, public_key, new_public_key):
     val = db.delete_owner(file_tag, public_key, new_public_key)
     return val

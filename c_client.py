@@ -37,7 +37,7 @@ if not os.path.exists('files'):
 def __send(msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
-    if msg_length > 1448:
+    if msg_length > 1024:
         print(f'large_text-{msg_length}')
         __send(f'large_text-{(msg_length//1024)+1}')
         client.sendall(message)
@@ -63,8 +63,9 @@ def send_text(key, str):
     list_string=client.recv(1024).decode(FORMAT)
     print(f'return: {list_string}')
     list = list_string.split('-')
-    val = list[1]
-    return val
+    if list[1]:
+        val = list[1]
+        return val
     
 def send_file(filename):
     send_file_name_list = ['send_file', filename]
@@ -110,12 +111,11 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
     if is_update=='N' and file_exists == True:
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
-        
         file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
         metadata = [file_name,file_count]
         cipher_2_list= '/'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '/'.join(str(c) for c in cuckoo_blocks)
-        #Comm: Send File
+        #Comm: Send File to edge
         command = 'upload_to_edge'
         l = [str(file_tag),str(public_key), group, str(file_count),cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, str(old_file_tag)]
         s = '+'.join(l)
@@ -159,15 +159,23 @@ def user_download(file_name,public_key):
     file_tag = get_file_tag(file_name)
     val_tag = check_for_update(file_name,'N')
     if val_tag!=0 and val_tag !=-1:
-        tag = val_tag[0]        
+        tag = val_tag        
     else:
         tag = file_tag
-    #Comm: Get File
-    val =edge.download_from_edge(tag, public_key)
-    if val == -1:
+    #Comm: Get file from Edge
+    command = 'download_from_edge'
+    l = [str(tag),str(public_key)]
+    s = '+'.join(l)
+    arg = s
+    value_str = send_text(command,arg)
+    #val =edge.download_from_edge(tag, public_key)
+    if value_str == '-1':
         print('User: No Access to the file')
         return -1
-    cipher_2_list, cipher_3, metadata =val
+    val_list = value_str.split('*')
+    cipher_2_list = val_list[0] 
+    cipher_3 = val_list[1]
+    metadata = val_list[2]
     save_file_name, file_count = metadata
     save_file_name =save_file_name[2:-1]
     cipher_2_str = cipher_2_list.split('/')
@@ -186,8 +194,6 @@ def user_download(file_name,public_key):
     print('User: File downloaded and saved under the name: ',save_file_name)
 
 def subs_upload(file_name, file_tag, public_key, private_key):
-    
-    #Comm: Get access
     command = 'check_access'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
@@ -214,37 +220,34 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         file_path = user_sub_input_folder_name+file_name
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
-    #Comm: Get check cuckoo
-    command = 'blocks_to_server_cuckoo_server'
-    #block_keys_str = '/'.join(block_keys)
-    #l = [str(file_tag),block_keys_str,str(public_key)]
-    #s = '+'.join(l)
-    #arg = s
-    #val = comm.send_text(command,arg)
-    val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
-    if val != -1:
+    command = 'blocks_to_server_cuckoo'
+    block_keys_str = '/'.join(block_keys)
+    l = [str(file_tag),block_keys_str,str(public_key)]
+    s = '+'.join(l)
+    arg = s
+    val = send_text(command,arg)
+    #val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
+    if val != '-1':
         time_dec = rsa_decypt(private_key,val)
-        #Comm: Get Ceck time
-        command = 'check_time_hash_server'
+        command = 'check_time_hash'
         l = [str(file_tag),str(public_key),time_dec]
         s = '+'.join(l)
         arg = s
-        #x = comm.send_text(command,arg)
-        x = edge.check_time_hash_server(file_tag, public_key, time_dec)
+        x = send_text(command,arg)
+        #x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
 
 def check_for_update(file_name, display='Y'):
     file_tag = get_file_tag(file_name)
-    #Comm: Get Update
-    command = 'check_fo_update_server'
+    command = 'check_for_update'
     arg = file_tag
-    #val = comm.send_text(command,arg)
-    val = edge.check_fo_update_server(file_tag)
+    val = send_text(command,arg)
+    #val = edge.check_fo_update_server(file_tag)
     if display=='N':
         return val
-    if val==0:
+    if val=='0':
         print('User: Same No Update')
-    elif val == -1:
+    elif val == '-1':
         print('User: No File in server, Upload as a New File')
     else:
         print('User: A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val[0]))
@@ -252,42 +255,40 @@ def check_for_update(file_name, display='Y'):
 
 def add_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
-    #Comm: Add User
-    command = 'add_user_server'
+    command = 'add_user'
     l = [str(file_tag),str(public_key), str(new_public_key)]
     s = '+'.join(l)
     arg = s
-    #val = comm.send_text(command,arg)
-    val = edge.add_user_server(file_tag, public_key, new_public_key)
-    if val ==1:
+    val = send_text(command,arg)
+    #val = edge.add_user_server(file_tag, public_key, new_public_key)
+    if val =='1':
         print('User: User Added Successfully')
-    elif val == -1:
+    elif val == '-1':
         print('User: No File Found')
-    elif val == -2:
+    elif val == '-2':
         print('User: No Access Found')
-    elif val == -3:
+    elif val == '-3':
         print('User: User is not an Admin')
-    elif val == -4:
+    elif val == '-4':
         print('User: New User Already Present')
 
 def delete_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
-    #Comm: Delete User
-    command = 'delete_user_server'
+    command = 'delete_user'
     l = [str(file_tag),str(public_key), str(new_public_key)]
     s = '+'.join(l)
     arg = s
-    #val = comm.send_text(command,arg)
-    val = edge.delete_user_server(file_tag, public_key, new_public_key)
+    val = send_text(command,arg)
+    #val = edge.delete_user_server(file_tag, public_key, new_public_key)
     if val ==1:
         print('User: User Deleted Successfully')
-    elif val == -1:
+    elif val == '-1':
         print('User: No File Found')
-    elif val == -2:
+    elif val == '-2':
         print('User: No Access Found')
-    elif val == -3:
+    elif val == '-3':
         print('User: User is not an Admin')
-    elif val == -4:
+    elif val == '-4':
         print('User: New User Already Deleted')
     
 

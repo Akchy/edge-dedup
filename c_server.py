@@ -27,33 +27,78 @@ def handle_client(conn, addr):
             print(f'command: {command}, val: {val}')
             value = check_command(command,val, conn)
             print(f'valuie: {value}')
-            if value != 1:
+            if value != 'dav1sh':
                 conn.send(f"return-{value}".encode(FORMAT))
     conn.close()
 
 
 def check_command(argument,arg, conn):
-    val = 1
+    val = 'dav1sh'
     match argument:
         case 'check_file_tag_exists':
-            print('hi')
             bool_val = server.check_file_tag_exists(file_tag=arg)
-            print('hola')
             if bool_val:
                 val = 'True'
             else:
                 val = 'False'
-            print(f'val: {val}')
         case 'check_access':
             lists = arg.split('+')
             file_tag = lists[0]
             public_key = lists[1]
             value = server.check_access(file_tag,public_key)
-            #value = [1,2,3]
             if not value:
                 val = 'False'
             else:
                 val = '*'.join(str(i) for i in value)
+        case 'check_block_exists':
+            bool_val = server.check_block_exists(arg)
+            if bool_val:
+                val = 'True'
+            else:
+                val = 'False'
+        case 'save_block_vales':
+            lists = arg.split('+')
+            mod = arg[0]
+            file_tag = arg[1]
+            server.save_block_vales(mod, file_tag)
+        case 'get_file_tag_of_block':
+            val = server.get_file_tag_of_block(block_tag=arg)
+        case 'blocks_to_server_cuckoo':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            block_keys = lists[1]
+            public_key = lists[2]
+            val = str(server.blocks_to_server_cuckoo(file_tag,block_keys,public_key))
+            #large val possibility
+        case 'check_time_hash':
+            lists = arg.split('+')
+            file_tag =lists[0]
+            public_key =lists[1]
+            time_val = lists[2]
+            val = str(server.check_time_hash(file_tag,public_key, time_val))
+        case 'check_for_update':
+            val = str(server.check_for_update(file_tag=arg))
+        case 'add_user':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            public_key = lists[1]
+            new_public_key = lists[2]
+            val = str(server.add_user(file_tag, public_key, new_public_key))
+        case 'delete_user':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            public_key = lists[1]
+            new_public_key = lists[2]
+            val = str(server.add_user(file_tag, public_key, new_public_key))
+        case 'download_from_server':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            public_key = lists[1]
+            val = server.download_from_server(file_tag, public_key)
+            #large val possibility
+        case 'large_text':
+            text = large_text(int(arg), conn)
+            val =check_command(text)
         case 'tag':
             val = get_rce(arg)
         case 'send_file':
@@ -61,6 +106,15 @@ def check_command(argument,arg, conn):
         case 'get_file':
             send_file(arg, conn)
     return val
+
+def large_text(count,conn):
+    i=0
+    large = ''
+    while i<count:
+        i+=1
+        data = conn.recv(1024).decode(FORMAT)
+        large +=data
+    return large
 
 def get_rce(val):
     print(f"Here's rce value from client: {val}")

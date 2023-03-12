@@ -1,6 +1,5 @@
 import socket 
 import threading
-import server
 import mod.enc.aes as AES
 from mod.modulo_hash import *
 from Crypto.Random import get_random_bytes
@@ -34,7 +33,6 @@ def handle_user(conn, addr):
         msg_length = conn.recv(HEADER).decode(FORMAT)
         if msg_length:
             msg_length = int(msg_length)
-            print(f'len: {msg_length}')
             msg = conn.recv(msg_length).decode(FORMAT)
             if msg == DISCONNECT_MESSAGE:
                 connected = False
@@ -43,12 +41,13 @@ def handle_user(conn, addr):
             val = str_to_list[1]
             print(f'command: {command}, val: {val}')        
             value = check_command(command,val,msg,conn)
-            conn.send(f"return-{value}".encode(FORMAT))
+            if value != 'dav1sh':
+                conn.send(f"return-{value}".encode(FORMAT))
     conn.close()
 
 
 def check_command(key,arg,msg,conn):
-    val = 1
+    val = 'dav1sh'
     match key:
         case 'get_edge_rce_key':
             b = get_edge_rce_key()
@@ -66,17 +65,29 @@ def check_command(key,arg,msg,conn):
             metadata = lists[7]
             is_update = lists[8]
             old_file_tag = lists[9]
-            #upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag)
-            
+            upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag)            
+        case 'download_from_edge':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            public_key = lists[1]
+            val = download_from_edge(file_tag,public_key)
         case 'check_file_tag_exists':
             val = send_text_server(message=msg)
         case 'check_access':
             val = send_text_server(message=msg)
+        case 'blocks_to_server_cuckoo':
+            val = send_text_server(message=msg)
+        case 'check_time_hash':
+            val = send_text_server(message=msg)
+        case 'check_for_update':
+            val = send_text_server(message=msg)
+        case 'add_user':
+            val = send_text_server(message=msg)
+        case 'delete_user':
+            val = send_text_server(message=msg)    
         case 'large_text':
-            v = large_text(int(arg), conn)
-            #val =check_command(v)
-        case 'key':
-            print(f'val: {arg}')
+            text = large_text(int(arg), conn)
+            val =check_command(text)
         case 'tag':
             val = send_text_server(msg)
         case 'send_file':
@@ -85,8 +96,6 @@ def check_command(key,arg,msg,conn):
         case 'get_file':
             get_file_from_server(arg)
             send_file(arg, conn)
-        case default:
-            print("something")
     if val !=1:
         return val
  
@@ -97,8 +106,7 @@ def large_text(count,conn):
         i+=1
         data = conn.recv(1024).decode(FORMAT)
         large +=data
-        print(f'x: {large}')
-    print('hola')
+    return large
     '''
     #Working properly
     data = conn.recv(1024).decode(FORMAT)
@@ -135,8 +143,9 @@ def send_text_server(message):
     server_socket.close()
     print(f'return: {list_string}')
     list = list_string.split('-')
-    val = list[1]
-    return val
+    if list[1]:
+        val = list[1]
+        return val
 
 def get_file(filename, file_conn): 
     with open(filename, 'wb') as f:
@@ -183,10 +192,15 @@ def get_file_from_server(filename):
 def __send_to_server(msg,server_socket):
     message = msg.encode(FORMAT)
     msg_length = len(message)
-    send_length = str(msg_length).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
-    server_socket.send(send_length)
-    server_socket.send(message)
+    if msg_length > 1024:
+        print(f'large_text-{msg_length}')
+        __send_to_server(f'large_text-{(msg_length//1024)+1}')
+        server_socket.sendall(message)
+    else:
+        send_length = str(msg_length).encode(FORMAT)
+        send_length += b' ' * (HEADER - len(send_length))
+        server_socket.send(send_length)
+        server_socket.send(message)
 
 def start():
     edge_socket.listen()
@@ -210,52 +224,71 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         block_path = edge_output_folder_name+o_file_name
         mod = modulo_hash_file(block_path,prime2)
         block_tags.append(mod)
-        #Comm: Get block exists
         command = 'check_block_exists'
         arg = str(mod)
-        #val = comm.send_text(command,arg)
-        val = server.check_block_exists(str(mod))
+        list = [command,arg]
+        message = '-'.join(list)
+        val = send_text_server(message)
+        #val = server.check_block_exists(str(mod))
         if not val:
-            #Comm: Save block 
             command = 'save_block_vales'
             l = [str(mod),str(file_tag)]
-            s = '-'.join(l)
+            s = '+'.join(l)
             arg = s
-            #val = comm.send_text(command,arg)
-            server.save_block_vales(str(mod), file_tag)
+            list = [command,arg]
+            message = '-'.join(list)
+            send_text_server(message)
+            #server.save_block_vales(str(mod), file_tag)
             #Send only the unique ones.
 
     block_tags_list= '-'.join(str(b) for b in block_tags)
     #Comm: Send file to server
-    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
+    command = 'upload_to_edge'
+    l = [str(file_tag),str(public_key), group,cipher_2,str(cipher_3),block_tags_list, cuckoo_blocks, str(metadata), is_update, str(old_file_tag)]
+    s = '+'.join(l)
+    arg = s
+    list = [command,arg]
+    message = '-'.join(list)
+    send_text_server(message)
+    #server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
 def download_from_edge(file_tag, public_key):
     #Comm: Get file
-    val = server.download_from_server(file_tag, public_key)
-    if val == -1:
-        return -1 # No Access
-    cipher_2, cipher_3, block_tags, metadata = val
-    metadata = metadata.split(',')
-    _, file_count = metadata
+    command = 'download_from_server'
+    l = [str(file_tag),str(public_key)]
+    s = '+'.join(l)
+    arg = s
+    list = [command,arg]
+    message = '-'.join(list)
+    val_str = send_text_server(message)
+    #val = server.download_from_server(file_tag, public_key)
+    if val_str == '-1':
+        return '-1' # No Access
+    val = val_str.split('*')
+    cipher_2, cipher_3, block_tags, metadata_str = val
+    metadata = metadata_str.split(',')
+    _, file_count = metadata_str
     file_count = file_count[:-1]
     tag_list_string= block_tags
     tag_list = tag_list_string.split('-')
     for i in range (1,int(file_count)):
         block_name = 'block{}.bin'.format(i)
         block_tag = tag_list[i-1]
-        #Comm: Get file tag
         command = 'get_file_tag_of_block'
         arg = block_tag
-        #file_tag_of_block = comm.send_text(command,arg)
-        file_tag_of_block = server.get_file_tag_of_block(block_tag) #define
+        list = [command,arg]
+        message = '-'.join(list)
+        file_tag_of_block = send_text_server(message)
+        #file_tag_of_block = server.get_file_tag_of_block(block_tag) #define
         if file_tag != file_tag_of_block:
-            #Comm: get index of block
             command = 'get_index_of_block'
-            l = [block_tag,file_tag]
-            s = '-'.join(l)
+            l = [str(block_tag),str(file_tag)]
+            s = '+'.join(l)
             arg = s
-            #index = comm.send_text(command,arg)
-            index = server.get_index_of_block(block_tag,file_tag)+1 #define
+            list = [command,arg]
+            message = '-'.join(list)
+            index = send_text_server(message)
+            #index = server.get_index_of_block(block_tag,file_tag)+1 #define
             block_suffix = file_tag_of_block
             #fetch block
         else:
@@ -264,8 +297,9 @@ def download_from_edge(file_tag, public_key):
         input_file_name = str(block_suffix)+'_{}.bin'.format(index)
         #Comm: Send file to User
         AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name, edge_output_down_folder_name,block_name,input_file_name)
-        
-    return cipher_2, cipher_3, metadata
+    l = [cipher_2, cipher_3, metadata_str]
+    l_str = '*'.join(l)    
+    return l_str
 
 
 start()
