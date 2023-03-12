@@ -37,11 +37,23 @@ if not os.path.exists('files'):
 def __send(msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
-    send_length = str(msg_length).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
-    client.send(send_length)
-    client.send(message)
+    if msg_length > 1448:
+        print(f'large_text-{msg_length}')
+        __send(f'large_text-{(msg_length//1024)+1}')
+        client.sendall(message)
+    else:
+        send_length = str(msg_length).encode(FORMAT)
+        send_length += b' ' * (HEADER - len(send_length))
+        print(f'len: {send_length}')
+        print(f'msg: {msg}')
+        client.send(send_length)
+        client.send(message)
 
+def split_message(message,chunk_size):
+    chunks = []
+    for i in range(0, len(message), chunk_size):
+        chunks.append(message[i:i+chunk_size])
+    return chunks
 
 def send_text(key, str):
     list = [key,str]
@@ -87,8 +99,7 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
     #edge_rce_key = edge.get_edge_rce_key()
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
-    #Comm: Get Check File tag
-    command = 'check_file_tag_exists_server'
+    command = 'check_file_tag_exists'
     arg = str(file_tag)
     file_exists_str = send_text(command,arg)
     if file_exists_str == 'True':
@@ -102,10 +113,15 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
         
         file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
         metadata = [file_name,file_count]
-        cipher_2_list= '-'.join(str(c) for c in cipher_2)
-        cuckoo_blocks_list= '-'.join(str(c) for c in cuckoo_blocks)
+        cipher_2_list= '/'.join(str(c) for c in cipher_2)
+        cuckoo_blocks_list= '/'.join(str(c) for c in cuckoo_blocks)
         #Comm: Send File
-        group_name = edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
+        command = 'upload_to_edge'
+        l = [str(file_tag),str(public_key), group, str(file_count),cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, str(old_file_tag)]
+        s = '+'.join(l)
+        arg = s
+        send_text(command,arg)
+        #edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
         
         print('User: File Uploaded\nPlease save the file tag mentioned below: \nFile Tag: {}'.format(file_tag))
 
@@ -154,7 +170,7 @@ def user_download(file_name,public_key):
     cipher_2_list, cipher_3, metadata =val
     save_file_name, file_count = metadata
     save_file_name =save_file_name[2:-1]
-    cipher_2_str = cipher_2_list.split('-')
+    cipher_2_str = cipher_2_list.split('/')
     file_count = int(file_count[:-1])
     cipher_3_int = int(cipher_3)
     int_rce_key = cipher_3_int ^prime2
@@ -172,7 +188,7 @@ def user_download(file_name,public_key):
 def subs_upload(file_name, file_tag, public_key, private_key):
     
     #Comm: Get access
-    command = 'check_access_server'
+    command = 'check_access'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
     arg = s
