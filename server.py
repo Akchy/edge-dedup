@@ -12,14 +12,13 @@ def check_file_tag_exists(file_tag):
 
 def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata, is_update, old_file_tag):
     if is_update == 'N':
-        group_name = db.upload_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
+        db.insert_file(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
     else:
-        group_name = update_file(old_file_tag,file_tag, public_key, cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
-    return group_name
+        db.update(old_file_tag,file_tag, public_key, cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
+
 
 def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata):
     db.update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
-    return 1
 
 def download_from_server(file_tag, public_key):
     val = db.get_ciphers(file_tag, str(public_key))

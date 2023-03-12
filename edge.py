@@ -43,9 +43,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
 
     block_tags_list= '-'.join(str(b) for b in block_tags)
     #Comm: Send file to server
-    group_name = server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
-
-    return group_name
+    server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
 def download_from_edge(file_tag, public_key):
     #Comm: Get file
