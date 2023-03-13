@@ -1,3 +1,4 @@
+import os
 import socket 
 import threading
 import mod.enc.aes as AES
@@ -49,6 +50,8 @@ def handle_user(conn, addr):
 def check_command(key,arg,msg,conn):
     val = 'dav1sh'
     match key:
+        case 'folder_share':
+            get_folder(arg,conn)
         case 'get_edge_rce_key':
             b = get_edge_rce_key()
             int_byte = int.from_bytes(b,'big')
@@ -65,7 +68,8 @@ def check_command(key,arg,msg,conn):
             metadata = lists[7]
             is_update = lists[8]
             old_file_tag = lists[9]
-            upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag)            
+            upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag)
+            val = '1'            
         case 'download_from_edge':
             lists = arg.split('+')
             file_tag = lists[0]
@@ -86,8 +90,12 @@ def check_command(key,arg,msg,conn):
         case 'delete_user':
             val = send_text_server(message=msg)    
         case 'large_text':
-            text = large_text(int(arg), conn)
-            val =check_command(text)
+            text = get_large_text(int(arg), conn)
+            l = text.split('-')
+            c = l[0]
+            a = l[1]
+            print(f'list: {l}')
+            val =check_command(c,a,text,conn)
         case 'tag':
             val = send_text_server(msg)
         case 'send_file':
@@ -99,7 +107,7 @@ def check_command(key,arg,msg,conn):
     if val !=1:
         return val
  
-def large_text(count,conn):
+def get_large_text(count,conn):
     i=0
     large = ''
     while i<count:
@@ -138,21 +146,41 @@ def send_text_server(message):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.connect(SERVER_ADDR)
     __send_to_server(message,server_socket)
-    __send_to_server(DISCONNECT_MESSAGE,server_socket)
+    print('waiting...')
     list_string =server_socket.recv(2048).decode(FORMAT)
+    print('waiting done')
+    __send_to_server(DISCONNECT_MESSAGE,server_socket)
+    #x =server_socket.recv(2048).decode(FORMAT)
     server_socket.close()
-    print(f'return: {list_string}')
-    list = list_string.split('-')
-    if list[1]:
+    print(f'msg: {message} \nreturn: {list_string}')
+    if list_string:
+        list = list_string.split('-')
         val = list[1]
         return val
 
-def get_file(filename, file_conn): 
+def get_file(filename, file_conn):
+    msg_length = file_conn.recv(HEADER).decode(FORMAT)
+    msg_length = int(msg_length)
+    msg = file_conn.recv(msg_length).decode(FORMAT)
+    l = msg.split('-')
+    file_size = l[1] 
     with open(filename, 'wb') as f:
-        data = file_conn.recv(1024)
-        while data:
+        l = int(file_size)
+        v = True
+        while v:
+            data = file_conn.recv(1024)
             f.write(data)
-            data = file_conn.recv(1024) 
+            l = l - len(data)
+            if l<=0:
+                v=False    
+        '''
+        data = file_conn.recv(1024)
+        d_len = len(data)
+        f.write(data)
+        while data and d_len>1024:
+            f.write(data)
+            data = file_conn.recv(1024)
+        #'''
 
 def send_file(filename, file_conn):
     with open(filename, 'rb') as f:
@@ -160,6 +188,29 @@ def send_file(filename, file_conn):
         while data:
             file_conn.send(data)
             data = f.read(1024)
+
+def get_folder(count,conn):
+    if not os.path.exists('files'):
+        os.mkdir('files')
+    #if not os.path.exists('files/blocks'):
+    #    os.mkdir('files/blocks')
+    if not os.path.exists(edge_input_folder_name):
+        os.mkdir(edge_input_folder_name)
+    print(f'count: {count}')
+    for i in range(int(count)):
+        print('loop: ',i)
+        #msg_length = conn.recv(HEADER).decode(FORMAT)
+        m = conn.recv(HEADER)
+        print(f'len: {m}')
+        msg_length = m.decode(FORMAT)
+        msg_length = int(msg_length)
+        msg = conn.recv(msg_length).decode(FORMAT)
+        l = msg.split('-')
+        file_name = l[1]
+        print(f'path: {file_name}')
+        get_file(file_name,conn)
+        conn.send('Received File'.encode(FORMAT))
+        print('loop ended')
 
 
 def send_file_to_server(filename):
@@ -193,8 +244,8 @@ def __send_to_server(msg,server_socket):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     if msg_length > 1024:
-        print(f'large_text-{msg_length}')
-        __send_to_server(f'large_text-{(msg_length//1024)+1}')
+        print(f'large_text1-{msg_length}')
+        __send_to_server(f'large_text-{msg_length}',server_socket)
         server_socket.sendall(message)
     else:
         send_length = str(msg_length).encode(FORMAT)
@@ -216,7 +267,7 @@ def get_edge_rce_key():
 
 def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag):
     block_tags=[]
-    for i in range (1,file_count):
+    for i in range (1,int(file_count)):
         o_file_name = str(file_tag)+'_{}.bin'.format(i)
         block_name = 'block{}.bin'.format(i)
         AES.aes_encrypt_file(edge_key, iv, edge_input_folder_name, edge_output_folder_name,block_name,o_file_name)
@@ -229,8 +280,9 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         list = [command,arg]
         message = '-'.join(list)
         val = send_text_server(message)
+        print(f'val: {val}')
         #val = server.check_block_exists(str(mod))
-        if not val:
+        if val=='False':
             command = 'save_block_vales'
             l = [str(mod),str(file_tag)]
             s = '+'.join(l)
@@ -241,14 +293,15 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             #server.save_block_vales(str(mod), file_tag)
             #Send only the unique ones.
 
-    block_tags_list= '-'.join(str(b) for b in block_tags)
+    block_tags_list= '/'.join(str(b) for b in block_tags)
     #Comm: Send file to server
-    command = 'upload_to_edge'
+    command = 'upload_to_server'
     l = [str(file_tag),str(public_key), group,cipher_2,str(cipher_3),block_tags_list, cuckoo_blocks, str(metadata), is_update, str(old_file_tag)]
     s = '+'.join(l)
     arg = s
     list = [command,arg]
     message = '-'.join(list)
+    print(f'upload to s: {message}')
     send_text_server(message)
     #server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
