@@ -61,6 +61,7 @@ def check_command(argument,arg, conn):
             mod = arg[0]
             file_tag = arg[1]
             server.save_block_vales(mod, file_tag)
+            val ='1'
         case 'get_file_tag_of_block':
             val = server.get_file_tag_of_block(block_tag=arg)
         case 'blocks_to_server_cuckoo':
@@ -76,6 +77,20 @@ def check_command(argument,arg, conn):
             public_key =lists[1]
             time_val = lists[2]
             val = str(server.check_time_hash(file_tag,public_key, time_val))
+        case 'upload_to_server':
+            lists = arg.split('+')
+            file_tag = lists[0]
+            public_key = lists[1]
+            group = lists[2]
+            cipher_2 = lists[3]
+            cipher_3 = lists[4]
+            block_tags = lists[5]
+            cuckoo_blocks = lists[6]
+            metadata = lists[7]
+            is_update = lists[8]
+            old_file_tag = lists[9]
+            server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata, is_update, old_file_tag)
+            val = '1'
         case 'check_for_update':
             val = str(server.check_for_update(file_tag=arg))
         case 'add_user':
@@ -97,8 +112,13 @@ def check_command(argument,arg, conn):
             val = server.download_from_server(file_tag, public_key)
             #large val possibility
         case 'large_text':
-            text = large_text(int(arg), conn)
-            val =check_command(text)
+            text = get_large_text(arg,conn)
+            l = text.split('-')
+            c = l[0]
+            a = l[1]
+            print(f'list: {l}')
+            val =check_command(c,a,conn)
+
         case 'tag':
             val = get_rce(arg)
         case 'send_file':
@@ -107,13 +127,17 @@ def check_command(argument,arg, conn):
             send_file(arg, conn)
     return val
 
-def large_text(count,conn):
-    i=0
+def get_large_text(str_len, conn):
     large = ''
-    while i<count:
-        i+=1
+    v = True
+    l = int(str_len)
+    while v:
         data = conn.recv(1024).decode(FORMAT)
         large +=data
+        l = l-len(data)
+        print(f'larfe: {large}\nDat: {data}\ntyp: {len(data)}')
+        if l<=0:
+            v = False
     return large
 
 def get_rce(val):
