@@ -112,7 +112,9 @@ def check_command(argument,arg, conn):
             lists = arg.split('+')
             file_tag = lists[0]
             public_key = lists[1]
-            val = server.download_from_server(file_tag, public_key)
+            large_text = server.download_from_server(file_tag, public_key)
+            send_large_text(large_text,conn)
+            val = '1'
             #large val possibility
         case 'large_text':
             text = get_large_text(arg,conn)
@@ -128,6 +130,7 @@ def check_command(argument,arg, conn):
             get_file(arg, conn)
         case 'get_file':
             send_file(arg, conn)
+            x = conn.recv(13).decode(FORMAT)
     return val
 
 def get_large_text(str_len, conn):
@@ -142,6 +145,15 @@ def get_large_text(str_len, conn):
         if l<=0:
             v = False
     return large
+
+def send_large_text(text,conn):
+    #send length
+    msg_length = len(text)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b' ' * (HEADER - len(send_length))
+    conn.send(send_length)
+    #sendall
+    conn.sendall(text)
 
 def get_rce(val):
     print(f"Here's rce value from client: {val}")
@@ -175,10 +187,14 @@ def get_file(filename, file_conn):
 
 def send_file(filename, file_conn):
     with open(filename, 'rb') as f:
-        data = f.read(1024)
-        while data:
-            file_conn.send(data)
-            data = f.read(1024)
+        data = f.read()
+        msg_length = len(data)
+        length = f'len-{msg_length}'
+        send_length = str(length).encode(FORMAT)
+        send_length += b' ' * (HEADER - len(send_length))
+        file_conn.send(send_length)
+        file_conn.send(length)
+        file_conn.sendall(data)
 
 
 def start():

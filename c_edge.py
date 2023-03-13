@@ -75,6 +75,8 @@ def check_command(key,arg,msg,conn):
             file_tag = lists[0]
             public_key = lists[1]
             val = download_from_edge(file_tag,public_key)
+        case 'download_folder_from_edge':
+            send_folder_to_user(conn)
         case 'check_file_tag_exists':
             val = send_text_server(message=msg)
         case 'check_access':
@@ -101,13 +103,25 @@ def check_command(key,arg,msg,conn):
         case 'send_file':
             get_file(arg, conn)
             send_file_to_server(arg)
-        case 'get_file':
-            get_file_from_server(arg)
-            send_file(arg, conn)
+        # case 'get_file':
+        #     get_file_from_server(arg)
+        #     send_file(arg, conn)
     if val !=1:
         return val
  
-def get_large_text(count,conn):
+def get_large_text(str_len,conn):
+    large = ''
+    v = True
+    l = int(str_len)
+    while v:
+        data = conn.recv(1024).decode(FORMAT)
+        large +=data
+        l = l-len(data)
+        if l<=0:
+            v = False
+    return large
+    
+    '''
     i=0
     large = ''
     while i<count:
@@ -115,7 +129,6 @@ def get_large_text(count,conn):
         data = conn.recv(1024).decode(FORMAT)
         large +=data
     return large
-    '''
     #Working properly
     data = conn.recv(1024).decode(FORMAT)
     large = data
@@ -142,16 +155,23 @@ def get_large_text(count,conn):
     print(f'str: {str}')
     #'''
 
-def send_text_server(message):
+def send_text_server(message,large='N'):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.connect(SERVER_ADDR)
     __send_to_server(message,server_socket)
-    list_string =server_socket.recv(2048).decode(FORMAT)
+    if large=='N':
+        list_string =server_socket.recv(2048).decode(FORMAT)
+    else:
+        msg_len_str = server_socket.recv(HEADER).decode(FORMAT)
+        msg_len = int(msg_len_str)
+        list_string = get_large_text(msg_len,server_socket)
     __send_to_server(DISCONNECT_MESSAGE,server_socket)
     #x =server_socket.recv(2048).decode(FORMAT)
     server_socket.close()
     print(f'msg: {message} \nreturn: {list_string}')
-    if list_string:
+    if large=='Y':
+        return list_string
+    elif list_string:
         list = list_string.split('-')
         val = list[1]
         return val
@@ -180,26 +200,34 @@ def get_file(filename, file_conn):
             data = file_conn.recv(1024)
         #'''
 
+def __send(msg,conn):
+    message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b' ' * (HEADER - len(send_length))
+    print(f'msg: {msg}')
+    conn.send(send_length)
+    conn.send(message)
+
 def send_file(filename, file_conn):
+    #Send File name
+    __send(f'file_name-{filename}',file_conn)
+    #Send file
     with open(filename, 'rb') as f:
-        data = f.read(1024)
-        while data:
-            file_conn.send(data)
-            data = f.read(1024)
+        data = f.read()
+        data_len = len(data)
+        __send(f'len-{data_len}',file_conn)
+        #file_conn.send(f'file_name-{filename}-{data_len}'.encode(FORMAT))
+        file_conn.sendall(data)
 
 def get_folder(count,conn):
     if not os.path.exists('files'):
         os.mkdir('files')
-    #if not os.path.exists('files/blocks'):
-    #    os.mkdir('files/blocks')
     if not os.path.exists(edge_input_folder_name):
         os.mkdir(edge_input_folder_name)
     print(f'count: {count}')
     for i in range(int(count)):
-        #msg_length = conn.recv(HEADER).decode(FORMAT)
-        m = conn.recv(HEADER)
-        print(f'len: {m}')
-        msg_length = m.decode(FORMAT)
+        msg_length = conn.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         msg = conn.recv(msg_length).decode(FORMAT)
         l = msg.split('-')
@@ -208,6 +236,13 @@ def get_folder(count,conn):
         get_file(file_name,conn)
         conn.send('Received File'.encode(FORMAT))
 
+def send_folder_to_user(conn):
+    folder_name = edge_output_down_folder_name
+    files = os.listdir(folder_name)
+    for file in files:
+        file_path = folder_name+file
+        send_file(file_path)
+        x = conn.recv(13).decode(FORMAT)
 
 def send_file_to_server(filename):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -233,11 +268,21 @@ def get_file_from_server(filename):
     get_file_name_list = ['get_file', filename]
     get_file_name_string = '-'.join(get_file_name_list)
     __send_to_server(get_file_name_string,server_socket)
+    msg_length = server_socket.recv(HEADER).decode(FORMAT)
+    msg_length = int(msg_length)
+    msg = server_socket.recv(msg_length).decode(FORMAT)
+    l = msg.split('-')
+    file_size = l[1] 
     with open(filename, 'wb') as f:
-        data = server_socket.recv(1024)
-        while data:
+        l = int(file_size)
+        v = True
+        while v:
+            data = server_socket.recv(1024)
             f.write(data)
-            data = server_socket.recv(1024) 
+            l = l - len(data)
+            if l<=0:
+                v=False 
+    server_socket.send('Received File'.encode(FORMAT))
     server_socket.close()
 
 def __send_to_server(msg,server_socket):
@@ -295,7 +340,6 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             #Send only the unique ones.
 
     block_tags_list= '/'.join(str(b) for b in block_tags)
-    #Comm: Send file to server
     command = 'upload_to_server'
     l = [str(file_tag),str(public_key), group,cipher_2,str(cipher_3),block_tags_list, cuckoo_blocks, str(metadata), is_update, str(old_file_tag)]
     s = '+'.join(l)
@@ -307,24 +351,26 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
     #server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
 def download_from_edge(file_tag, public_key):
-    #Comm: Get file
     command = 'download_from_server'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
     arg = s
     list = [command,arg]
     message = '-'.join(list)
-    val_str = send_text_server(message)
+    val_str = send_text_server(message,large='Y')
     #val = server.download_from_server(file_tag, public_key)
     if val_str == '-1':
         return '-1' # No Access
     val = val_str.split('*')
-    cipher_2, cipher_3, block_tags, metadata_str = val
+    cipher_2 = val[0]
+    cipher_3 = val[1]
+    block_tags = val[2]
+    metadata_str  = val[3]
     metadata = metadata_str.split(',')
-    _, file_count = metadata_str
+    _, file_count = metadata
     file_count = file_count[:-1]
     tag_list_string= block_tags
-    tag_list = tag_list_string.split('-')
+    tag_list = tag_list_string.split('/')
     for i in range (1,int(file_count)):
         block_name = 'block{}.bin'.format(i)
         block_tag = tag_list[i-1]
@@ -349,7 +395,12 @@ def download_from_edge(file_tag, public_key):
             index = i
             block_suffix = file_tag
         input_file_name = str(block_suffix)+'_{}.bin'.format(index)
-        #Comm: Send file to User
+        if not os.path.exists('files'):
+            os.mkdir('files')
+        if not os.path.exists(edge_down_input_folder_name):
+            os.mkdir(edge_down_input_folder_name)
+        file_path = edge_down_input_folder_name+input_file_name
+        get_file_from_server(file_path)
         AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name, edge_output_down_folder_name,block_name,input_file_name)
     l = [cipher_2, cipher_3, metadata_str]
     l_str = '*'.join(l)    

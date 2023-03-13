@@ -38,7 +38,7 @@ def __send(msg):
     msg_length = len(message)
     if msg_length > 1024:
         print(f'large_text-{msg_length}')
-        __send(f'large_text-{(msg_length//1024)+1}')
+        __send(f'large_text-{msg_length}')
         client.sendall(message)
     else:
         send_length = str(msg_length).encode(FORMAT)
@@ -77,16 +77,26 @@ def send_file(filename):
         client.sendall(data)
  
 def get_file(filename):
-    get_file_name_list = ['get_file', filename]
-    get_file_name_string = '-'.join(get_file_name_list)
-    __send(get_file_name_string)
+    # get_file_name_list = ['get_file', filename]
+    # get_file_name_string = '-'.join(get_file_name_list)
+    # __send(get_file_name_string)
 
     # receive file contents from server and save to disk
+
+    msg_length = client.recv(HEADER).decode(FORMAT)
+    msg_length = int(msg_length)
+    msg = client.recv(msg_length).decode(FORMAT)
+    l = msg.split('-')
+    file_size = l[1] 
     with open(filename, 'wb') as f:
-        data = client.recv(1024)
-        while data:
-            f.write(data)
+        l = int(file_size)
+        v = True
+        while v:
             data = client.recv(1024)
+            f.write(data)
+            l = l - len(data)
+            if l<=0:
+                v=False   
 
 def send_folder(folder_name):
     files = os.listdir(folder_name)
@@ -170,12 +180,11 @@ def user_download(file_name,public_key):
         tag = val_tag        
     else:
         tag = file_tag
-    #Comm: Get file from Edge
     command = 'download_from_edge'
     l = [str(tag),str(public_key)]
     s = '+'.join(l)
     arg = s
-    value_str = send_text(command,arg)
+    value_str = send_text(command,arg)    
     #val =edge.download_from_edge(tag, public_key)
     if value_str == '-1':
         print('User: No Access to the file')
@@ -187,11 +196,27 @@ def user_download(file_name,public_key):
     save_file_name, file_count = metadata
     save_file_name =save_file_name[2:-1]
     cipher_2_str = cipher_2_list.split('/')
-    file_count = int(file_count[:-1])
     cipher_3_int = int(cipher_3)
     int_rce_key = cipher_3_int ^prime2
     rce_key = int_rce_key.to_bytes(24,'big')
+    file_count = int(file_count[:-1])
+
+    command = 'download_folder_from_edge'
+    arg = '1'
+    l = [command,arg]
+    l_str = '-'.join(l)
+    __send(l_str)
+
     for i in range (1,file_count):
+        #get file
+        msg_length = client.recv(HEADER).decode(FORMAT)
+        msg_length = int(msg_length)
+        msg = client.recv(msg_length).decode(FORMAT)
+        l = msg.split('-')
+        file_name = l[1]
+        get_file(file_name)
+        x = client.recv(13).decode(FORMAT)
+        
         cipher_2_int = int(cipher_2_str[i-1])
         byte_cipher = cipher_2_int.to_bytes(64,'big')
         block_key = aes_decrypt_byte(rce_key,byte_cipher)
@@ -310,9 +335,9 @@ file_name = 'test.txt'
 is_group = 'Y'
 is_update= 'N'
 old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-user_upload(file_name,is_group, new_public_key, new_private_key)
+#user_upload(file_name,is_group, new_public_key, new_private_key)
 
-#user_download(file_name, public_key)
+user_download(file_name, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 
