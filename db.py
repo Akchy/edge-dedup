@@ -252,7 +252,7 @@ def get_time_hash(public_key):
     else:
         return '-1' # No time saved for Public Key
     
-def save_block_vales(block_name, file_tag):
+def save_block_values(block_name, file_tag):
     cursor = server_db.cursor()
     cursor.execute("create table if not exists block_table (id INT AUTO_INCREMENT PRIMARY KEY, block_tag LONGTEXT, file_tag VARCHAR(255))")
     cursor.execute("insert into block_table (block_tag, file_tag) values(%s, %s)",(block_name, file_tag))

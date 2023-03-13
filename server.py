@@ -75,8 +75,8 @@ def check_time_hash(file_tag,public_key, time_val):
             print('User Added')
     return '1'
 
-def save_block_vales(block_tag, file_tag):
-    db.save_block_vales(block_tag, file_tag)
+def save_block_values(block_tag, file_tag):
+    db.save_block_values(block_tag, file_tag)
     
 
 def check_block_exists(block_tag):

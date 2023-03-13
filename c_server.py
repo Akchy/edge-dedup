@@ -58,11 +58,12 @@ def check_command(argument,arg, conn):
                 val = 'True'
             else:
                 val = 'False'
-        case 'save_block_vales':
+        case 'save_block_values':
             lists = arg.split('+')
-            mod = arg[0]
-            file_tag = arg[1]
-            server.save_block_vales(mod, file_tag)
+            mod = lists[0]
+            file_tag = lists[1]
+            print(f'list: {lists}\nmod: {mod}\ntag: {file_tag}')
+            server.save_block_values(mod, file_tag)
             val ='1'
         case 'get_file_tag_of_block':
             val = server.get_file_tag_of_block(block_tag=arg)
