@@ -1,3 +1,4 @@
+import os
 import server
 import socket 
 import threading
@@ -9,6 +10,7 @@ SERVER = socket.gethostname()
 ADDR = ('', PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
+edge_output_folder_name = 'files/edge_encrypt_blocks/'
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
@@ -145,11 +147,30 @@ def get_rce(val):
     return 'Davish'
 
 def get_file(filename, file_conn):
+
+    if not os.path.exists('files'):
+        os.mkdir('files')
+    if not os.path.exists(edge_output_folder_name):
+        os.mkdir(edge_output_folder_name)
+    msg_length = file_conn.recv(HEADER).decode(FORMAT)
+    msg_length = int(msg_length)
+    msg = file_conn.recv(msg_length).decode(FORMAT)
+    l = msg.split('-')
+    file_size = l[1] 
     with open(filename, 'wb') as f:
-        data = file_conn.recv(1024)
-        while data:
-            f.write(data)
+        l = int(file_size)
+        v = True
+        while v:
             data = file_conn.recv(1024)
+            f.write(data)
+            l = l - len(data)
+            if l<=0:
+                v=False
+    # with open(filename, 'wb') as f:
+    #     data = file_conn.recv(1024)
+    #     while data:
+    #         f.write(data)
+    #         data = file_conn.recv(1024)
 
 def send_file(filename, file_conn):
     with open(filename, 'rb') as f:
