@@ -2,7 +2,6 @@ import socket
 
 # Here's the code for user
 import rsa
-import edge
 from mod.enc.aes import *
 from mod.modulo_hash import *
 from mod.enc.sarce import get_rce_key
@@ -44,7 +43,6 @@ def __send(msg):
     else:
         send_length = str(msg_length).encode(FORMAT)
         send_length += b' ' * (HEADER - len(send_length))
-        print(f'len: {send_length}')
         print(f'msg: {msg}')
         client.send(send_length)
         client.send(message)
@@ -73,10 +71,10 @@ def send_file(filename):
     __send(send_file_name_string)
 
     with open(filename, 'rb') as f:
-        data = f.read(1024)
-        while data:
-            client.send(data)
-            data = f.read(1024)
+        data = f.read()
+        print(f'leng: {len(data)}')
+        __send(f'len-{len(data)}')
+        client.sendall(data)
  
 def get_file(filename):
     get_file_name_list = ['get_file', filename]
@@ -89,6 +87,17 @@ def get_file(filename):
         while data:
             f.write(data)
             data = client.recv(1024)
+
+def send_folder(folder_name):
+    files = os.listdir(folder_name)
+    key = 'folder_share'
+    val = str(len(files))
+    command = key+'-'+val
+    __send(command)
+    for file in files:
+        file_path = folder_name+file
+        send_file(file_path)
+        x = client.recv(13).decode(FORMAT)
 
 def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
@@ -115,7 +124,6 @@ def user_upload(file_name, group,public_key, private_key,is_update='N', old_file
         metadata = [file_name,file_count]
         cipher_2_list= '/'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '/'.join(str(c) for c in cuckoo_blocks)
-        #Comm: Send File to edge
         command = 'upload_to_edge'
         l = [str(file_tag),str(public_key), group, str(file_count),cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, str(old_file_tag)]
         s = '+'.join(l)
@@ -145,13 +153,13 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
         bytes_cipher = aes_encrypt_byte(rce_key,mod)
         int_cipher = int.from_bytes(bytes_cipher,'big')
         cipher_2.append(int_cipher)
+    send_folder(user_output_folder_name)
     int_rce_key = int.from_bytes(rce_key,'big')
     cipher_3 = int_rce_key ^ prime2
     
     # Saving User's Public and Private keys in a file.
     with open('files/rsa.txt','w+') as file:
         file.write('\n\npublic= {} \nprivate= {}'.format(public_key,private_key))
-
 
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
