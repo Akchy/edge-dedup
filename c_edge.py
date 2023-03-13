@@ -146,9 +146,7 @@ def send_text_server(message):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.connect(SERVER_ADDR)
     __send_to_server(message,server_socket)
-    print('waiting...')
     list_string =server_socket.recv(2048).decode(FORMAT)
-    print('waiting done')
     __send_to_server(DISCONNECT_MESSAGE,server_socket)
     #x =server_socket.recv(2048).decode(FORMAT)
     server_socket.close()
@@ -198,7 +196,6 @@ def get_folder(count,conn):
         os.mkdir(edge_input_folder_name)
     print(f'count: {count}')
     for i in range(int(count)):
-        print('loop: ',i)
         #msg_length = conn.recv(HEADER).decode(FORMAT)
         m = conn.recv(HEADER)
         print(f'len: {m}')
@@ -210,7 +207,6 @@ def get_folder(count,conn):
         print(f'path: {file_name}')
         get_file(file_name,conn)
         conn.send('Received File'.encode(FORMAT))
-        print('loop ended')
 
 
 def send_file_to_server(filename):
@@ -287,7 +283,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         print(f'val: {val}')
         #val = server.check_block_exists(str(mod))
         if val=='False':
-            command = 'save_block_vales'
+            command = 'save_block_values'
             l = [str(mod),str(file_tag)]
             s = '+'.join(l)
             arg = s
