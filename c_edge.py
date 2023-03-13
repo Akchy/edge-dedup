@@ -221,10 +221,14 @@ def send_file_to_server(filename):
     __send_to_server(send_file_name_string,server_socket)
 
     with open(filename, 'rb') as f:
-        data = f.read(1024)
-        while data:
-            server_socket.send(data)
-            data = f.read(1024)
+        data = f.read()
+        print(f'leng: {len(data)}')
+        __send_to_server(f'len-{len(data)}',server_socket)
+        server_socket.sendall(data)
+        # data = f.read(1024)
+        # while data:
+        #     server_socket.send(data)
+        #     data = f.read(1024)
     server_socket.close()
 
 def get_file_from_server(filename):
@@ -290,6 +294,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             list = [command,arg]
             message = '-'.join(list)
             send_text_server(message)
+            send_file_to_server(block_path)
             #server.save_block_vales(str(mod), file_tag)
             #Send only the unique ones.
 
