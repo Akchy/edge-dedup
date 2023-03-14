@@ -9,8 +9,8 @@ def generate_keys():
     #Public = n,e , Private = n,e,d,p,q
     return (public_key, private_key)
 
-def rsa_encrypt(public_key, message):
-    ciphertext = rsa.encrypt(message, rsa.PublicKey(public_key.n, public_key.e))
+def rsa_encrypt(n,e, message):
+    ciphertext = rsa.encrypt(message, rsa.PublicKey(n,e))
     return ciphertext
 
 def rsa_decypt(private_key, ciphertext):
