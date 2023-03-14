@@ -22,7 +22,7 @@ def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_
 
 def download_from_server(file_tag, public_key):
     val = db.get_ciphers(file_tag, str(public_key))
-    if val == -1 :
+    if val == '-1' :
         return '-1' #No Access
     return val
    

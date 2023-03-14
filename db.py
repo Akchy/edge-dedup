@@ -64,8 +64,8 @@ def get_owner_table_name(file_tag):
     cursor = server_db.cursor()
     cursor.execute("select owner_table from hash_table where file_tag = %s",(file_tag,))
     myresult = cursor.fetchone()
-    version_table_name = myresult[0]
-    return version_table_name
+    owner_table_name = myresult[0]
+    return owner_table_name
 
 def check_admin(file_tag, public_key):
     cursor = server_db.cursor()
