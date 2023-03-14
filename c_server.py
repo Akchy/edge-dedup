@@ -72,7 +72,7 @@ def check_command(argument,arg, conn):
             file_tag = lists[0]
             block_keys = lists[1]
             public_key = lists[2]
-            val = str(server.blocks_to_server_cuckoo(file_tag,block_keys,public_key))
+            val = server.blocks_to_server_cuckoo(file_tag,block_keys,public_key)
             #large val possibility
         case 'check_time_hash':
             lists = arg.split('+')
@@ -107,7 +107,7 @@ def check_command(argument,arg, conn):
             file_tag = lists[0]
             public_key = lists[1]
             new_public_key = lists[2]
-            val = str(server.add_user(file_tag, public_key, new_public_key))
+            val = str(server.delete_user(file_tag, public_key, new_public_key))
         case 'download_from_server':
             lists = arg.split('+')
             file_tag = lists[0]

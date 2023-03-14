@@ -17,8 +17,8 @@ def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, 
         db.update(old_file_tag,file_tag, public_key, cipher_2,cipher_3, block_tags, cuckoo_blocks, metadata)
 
 
-def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata):
-    db.update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
+# def update_file(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata):
+#     db.update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
 
 def download_from_server(file_tag, public_key):
     val = db.get_ciphers(file_tag, str(public_key))
@@ -46,10 +46,10 @@ def check_access(file_tag, public_key):
 def blocks_to_server_cuckoo(file_tag, block_keys_str, public_key):
     flag =0
     blocks_string = db.get_cuckoo_blocks(file_tag) 
-    blocks = blocks_string.split('-')
+    blocks_from_db = blocks_string.split('/')
     block_keys = block_keys_str.split('/')
     for i in block_keys:
-        is_avail = check_cuckoo(blocks,i)
+        is_avail = check_cuckoo(blocks_from_db,i)
         if not is_avail:
             flag = 1
             break
@@ -60,9 +60,16 @@ def blocks_to_server_cuckoo(file_tag, block_keys_str, public_key):
     timestamp = datetime.datetime.now().timestamp()
     string_time = str(timestamp)
     byte_time = string_time.encode()
-    time_hash = rsa_encrypt(public_key,byte_time)  
+    li = public_key.split(',')
+    n_str = li[0]
+    e_str = li[1]
+    n = int(n_str[10:])
+    e = int(e_str[:-1])
+    time_hash = rsa_encrypt(n,e,byte_time)  
     db.save_time(str(public_key), string_time)
-    return time_hash
+    int_hash = int.from_bytes(time_hash,'big')
+    li = str(len(time_hash))+'*'+str(int_hash)
+    return li
 
 def check_time_hash(file_tag,public_key, time_val):
     val = db.get_time_hash(str(public_key))
@@ -71,7 +78,7 @@ def check_time_hash(file_tag,public_key, time_val):
     if time_val == val:
         print('User Verified')
         added = db.sub_upload_add_owner(file_tag, str(public_key))
-        if added!= -1:
+        if added!= '-1':
             print('User Added')
     return '1'
 
