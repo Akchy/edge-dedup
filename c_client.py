@@ -60,7 +60,7 @@ def send_text(key, str):
     __send(l_str)
     list_string=client.recv(1024).decode(FORMAT)
     print(f'return: {list_string}')
-    list = list_string.split('-')
+    list = list_string.split('-/')
     if list[1]:
         val = list[1]
         return val
@@ -86,18 +86,20 @@ def get_file(filename):
     msg_length = client.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     msg = client.recv(msg_length).decode(FORMAT)
-    l = msg.split('-')
-    file_size = l[1] 
+    print(f'file_name: {filename}')
+    li = msg.split('-')
+    file_size = int(li[1]) 
     with open(filename, 'wb') as f:
-        l = int(file_size)
+        l = file_size
         v = True
         while v:
             data = client.recv(1024)
+            print(f'l: {l} data: {data}')
             f.write(data)
             l = l - len(data)
             if l<=0:
-                v=False   
-
+                v=False
+        print('hola')
 def send_folder(folder_name):
     files = os.listdir(folder_name)
     key = 'folder_share'
@@ -108,6 +110,18 @@ def send_folder(folder_name):
         file_path = folder_name+file
         send_file(file_path)
         x = client.recv(13).decode(FORMAT)
+
+def get_folder_from_edge(file_count):
+    for i in range(1,file_count):
+        print(f'loop: {i}')
+        msg_length = client.recv(HEADER).decode(FORMAT)
+        msg_length = int(msg_length)
+        msg = client.recv(msg_length).decode(FORMAT)
+        l = msg.split('-')
+        file_name = l[1]
+        get_file(file_name)
+        x = client.send('Received File'.encode(FORMAT))
+    
 
 def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
@@ -174,9 +188,12 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
 def user_download(file_name,public_key):
+
+    if not os.path.exists(user_down_input_folder_name):
+        os.mkdir(user_down_input_folder_name)
     file_tag = get_file_tag(file_name)
     val_tag = check_for_update(file_name,'N')
-    if val_tag!=0 and val_tag !=-1:
+    if val_tag!='0' and val_tag !='-1':
         tag = val_tag        
     else:
         tag = file_tag
@@ -193,7 +210,7 @@ def user_download(file_name,public_key):
     cipher_2_list = val_list[0] 
     cipher_3 = val_list[1]
     metadata = val_list[2]
-    save_file_name, file_count = metadata
+    save_file_name, file_count = metadata.split(',')
     save_file_name =save_file_name[2:-1]
     cipher_2_str = cipher_2_list.split('/')
     cipher_3_int = int(cipher_3)
@@ -206,17 +223,11 @@ def user_download(file_name,public_key):
     l = [command,arg]
     l_str = '-'.join(l)
     __send(l_str)
-
+    print('getting files')
+    get_folder_from_edge(file_count)
+    print('done')
     for i in range (1,file_count):
         #get file
-        msg_length = client.recv(HEADER).decode(FORMAT)
-        msg_length = int(msg_length)
-        msg = client.recv(msg_length).decode(FORMAT)
-        l = msg.split('-')
-        file_name = l[1]
-        get_file(file_name)
-        x = client.recv(13).decode(FORMAT)
-        
         cipher_2_int = int(cipher_2_str[i-1])
         byte_cipher = cipher_2_int.to_bytes(64,'big')
         block_key = aes_decrypt_byte(rce_key,byte_cipher)
@@ -273,7 +284,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
 def check_for_update(file_name, display='Y'):
     file_tag = get_file_tag(file_name)
     command = 'check_for_update'
-    arg = file_tag
+    arg = str(file_tag)
     val = send_text(command,arg)
     #val = edge.check_fo_update_server(file_tag)
     if display=='N':
@@ -337,7 +348,7 @@ is_update= 'N'
 old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
 #user_upload(file_name,is_group, new_public_key, new_private_key)
 
-user_download(file_name, public_key)
+user_download(file_name, new_public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 

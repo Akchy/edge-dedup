@@ -43,7 +43,7 @@ def handle_user(conn, addr):
             print(f'command: {command}, val: {val}')        
             value = check_command(command,val,msg,conn)
             if value != 'dav1sh':
-                conn.send(f"return-{value}".encode(FORMAT))
+                conn.send(f"return-/{value}".encode(FORMAT))
     conn.close()
 
 
@@ -172,7 +172,7 @@ def send_text_server(message,large='N'):
     if large=='Y':
         return list_string
     elif list_string:
-        list = list_string.split('-')
+        list = list_string.split('-/')
         val = list[1]
         return val
 
@@ -241,7 +241,7 @@ def send_folder_to_user(conn):
     files = os.listdir(folder_name)
     for file in files:
         file_path = folder_name+file
-        send_file(file_path)
+        send_file(file_path,conn)
         x = conn.recv(13).decode(FORMAT)
 
 def send_file_to_server(filename):
