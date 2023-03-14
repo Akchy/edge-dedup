@@ -60,7 +60,7 @@ def send_text(key, str):
     __send(l_str)
     list_string=client.recv(1024).decode(FORMAT)
     print(f'return: {list_string}')
-    list = list_string.split('+')
+    list = list_string.split('-/')
     if list[1]:
         val = list[1]
         return val
