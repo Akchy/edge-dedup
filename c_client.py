@@ -123,7 +123,7 @@ def get_folder_from_edge(file_count):
         x = client.send('Received File'.encode(FORMAT))
     
 
-def user_upload(file_name, group,public_key, private_key,is_update='N', old_file_tag=''):
+def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_file_tag=''):
     file_tag = get_file_tag(file_name)
     # RCE Key Generation
     command = 'get_edge_rce_key'
@@ -184,7 +184,6 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     # Saving User's Public and Private keys in a file.
     with open('files/rsa.txt','w+') as file:
         file.write('\n\npublic= {} \nprivate= {}'.format(public_key,private_key))
-
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
 def user_download(file_name,public_key):
@@ -265,14 +264,18 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
     command = 'blocks_to_server_cuckoo'
-    block_keys_str = '/'.join(block_keys)
+    block_keys_str = '/'.join(str(b) for b in block_keys)
     l = [str(file_tag),block_keys_str,str(public_key)]
     s = '+'.join(l)
     arg = s
     val = send_text(command,arg)
+    li = val.split('*')
+    b_len = int(li[0])
+    b_int = int(li[1])
+    cipher = b_int.to_bytes(b_len,'big')
     #val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
     if val != '-1':
-        time_dec = rsa_decypt(private_key,val)
+        time_dec = rsa_decypt(private_key,cipher)
         command = 'check_time_hash'
         l = [str(file_tag),str(public_key),time_dec]
         s = '+'.join(l)
@@ -343,21 +346,16 @@ new_public_key= rsa.PublicKey(15128310182785857438414726967402077896021009156547
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
 file_name = 'test.txt'
-is_group = 'Y'
-is_update= 'N'
-old_file_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-#user_upload(file_name,is_group, new_public_key, new_private_key)
+group = 'Y'
+update= 'Y'
+old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
+user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-user_download(file_name, new_public_key)
+#user_download(file_name, new_public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 
 #delete_user(file_name, public_key, new_public_key)
-
-#send_text('tag','hello there user with Public Key')
-
-#send_file('cc.txt')
-
-#get_file('ss.txt')
+#add_user(file_name, public_key, new_public_key)
 __send(DISCONNECT_MESSAGE)
 client.close()
