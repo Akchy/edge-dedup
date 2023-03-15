@@ -37,13 +37,13 @@ def __send(msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     if msg_length > 1024:
-        print(f'large_text-{msg_length}')
+        #print(f'large_text-{msg_length}')
         __send(f'large_text-{msg_length}')
         client.sendall(message)
     else:
         send_length = str(msg_length).encode(FORMAT)
         send_length += b' ' * (HEADER - len(send_length))
-        print(f'msg: {msg}')
+        #print(f'msg: {msg}')
         client.send(send_length)
         client.send(message)
 
@@ -56,7 +56,7 @@ def split_message(message,chunk_size):
 def send_text(key, str,large='N'):
     list = [key,str]
     l_str = '-'.join(list)
-    print(f'send: {l_str}')
+    #print(f'send: {l_str}')
     __send(l_str)
     #list_string=client.recv(1024).decode(FORMAT)
     if large=='N':
@@ -65,7 +65,7 @@ def send_text(key, str,large='N'):
         msg_len_str = client.recv(HEADER).decode(FORMAT)
         msg_len = int(msg_len_str)
         list_string = get_large_text(msg_len)
-    print(f'return: {list_string}')
+    #print(f'return: {list_string}')
     if large=='Y':
         return list_string
     elif list_string:
@@ -92,7 +92,7 @@ def send_file(filename):
 
     with open(filename, 'rb') as f:
         data = f.read()
-        print(f'leng: {len(data)}')
+        #print(f'leng: {len(data)}')
         __send(f'len-{len(data)}')
         client.sendall(data)
  
@@ -106,7 +106,7 @@ def get_file(filename):
     msg_length = client.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     msg = client.recv(msg_length).decode(FORMAT)
-    print(f'file_name: {filename}')
+    #print(f'file_name: {filename}')
     li = msg.split('-')
     file_size = int(li[1]) 
     with open(filename, 'wb') as f:
@@ -114,7 +114,7 @@ def get_file(filename):
         v = True
         while v:
             data = client.recv(1024)
-            print(f'l: {l} data: {data}')
+            #print(f'l: {l} data: {data}')
             f.write(data)
             l = l - len(data)
             if l<=0:
@@ -132,7 +132,7 @@ def send_folder(folder_name):
 
 def get_folder_from_edge(file_count):
     for i in range(1,file_count):
-        print(f'loop: {i}')
+        #print(f'loop: {i}')
         msg_length = client.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         msg = client.recv(msg_length).decode(FORMAT)
@@ -241,9 +241,9 @@ def user_download(file_name,public_key):
     l = [command,arg]
     l_str = '-'.join(l)
     __send(l_str)
-    print('getting files')
+    #print('getting files')
     get_folder_from_edge(file_count)
-    print('done')
+    #print('done')
     for i in range (1,file_count):
         #get file
         cipher_2_int = int(cipher_2_str[i-1])
@@ -262,7 +262,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     arg = s
     value_str = send_text(command,arg)
     #value = edge.check_access_server(file_tag,public_key)
-    print(f'check value: {value_str}')
+    #print(f'check value: {value_str}')
     if value_str =='False':
     #if value ==False:
         print("User: Same Person")
