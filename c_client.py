@@ -27,7 +27,7 @@ user_output_folder_name = 'files/encrypt_blocks/'
 user_down_input_folder_name = 'files/edge_decrypt_blocks/'
 user_down_output_folder_name = 'files/dencrypt_blocks/'
 user_sub_input_folder_name = 'subs_blocks/'
-file_size = 1024
+file_size = 1024*8
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
@@ -37,13 +37,13 @@ def __send(msg):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     if msg_length > 1024:
-        print(f'large_text-{msg_length}')
+        #print(f'large_text-{msg_length}')
         __send(f'large_text-{msg_length}')
         client.sendall(message)
     else:
         send_length = str(msg_length).encode(FORMAT)
         send_length += b' ' * (HEADER - len(send_length))
-        print(f'msg: {msg}')
+        #print(f'msg: {msg}')
         client.send(send_length)
         client.send(message)
 
@@ -53,18 +53,38 @@ def split_message(message,chunk_size):
         chunks.append(message[i:i+chunk_size])
     return chunks
 
-def send_text(key, str):
+def send_text(key, str,large='N'):
     list = [key,str]
     l_str = '-'.join(list)
-    print(f'send: {l_str}')
+    #print(f'send: {l_str}')
     __send(l_str)
-    list_string=client.recv(1024).decode(FORMAT)
-    print(f'return: {list_string}')
-    list = list_string.split('-/')
-    if list[1]:
+    #list_string=client.recv(1024).decode(FORMAT)
+    if large=='N':
+        list_string =client.recv(2048).decode(FORMAT)
+    else:
+        msg_len_str = client.recv(HEADER).decode(FORMAT)
+        msg_len = int(msg_len_str)
+        list_string = get_large_text(msg_len)
+    #print(f'return: {list_string}')
+    if large=='Y':
+        return list_string
+    elif list_string:
+        list = list_string.split('-/')
         val = list[1]
         return val
-    
+
+def get_large_text(str_len):
+    large = ''
+    v = True
+    l = int(str_len)
+    while v:
+        data = client.recv(1024).decode(FORMAT)
+        large +=data
+        l = l-len(data)
+        if l<=0:
+            v = False
+    return large    
+
 def send_file(filename):
     send_file_name_list = ['send_file', filename]
     send_file_name_string = '-'.join(send_file_name_list)
@@ -72,7 +92,7 @@ def send_file(filename):
 
     with open(filename, 'rb') as f:
         data = f.read()
-        print(f'leng: {len(data)}')
+        #print(f'leng: {len(data)}')
         __send(f'len-{len(data)}')
         client.sendall(data)
  
@@ -86,7 +106,7 @@ def get_file(filename):
     msg_length = client.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     msg = client.recv(msg_length).decode(FORMAT)
-    print(f'file_name: {filename}')
+    #print(f'file_name: {filename}')
     li = msg.split('-')
     file_size = int(li[1]) 
     with open(filename, 'wb') as f:
@@ -94,12 +114,11 @@ def get_file(filename):
         v = True
         while v:
             data = client.recv(1024)
-            print(f'l: {l} data: {data}')
+            #print(f'l: {l} data: {data}')
             f.write(data)
             l = l - len(data)
             if l<=0:
                 v=False
-        print('hola')
 def send_folder(folder_name):
     files = os.listdir(folder_name)
     key = 'folder_share'
@@ -113,7 +132,7 @@ def send_folder(folder_name):
 
 def get_folder_from_edge(file_count):
     for i in range(1,file_count):
-        print(f'loop: {i}')
+        #print(f'loop: {i}')
         msg_length = client.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         msg = client.recv(msg_length).decode(FORMAT)
@@ -200,7 +219,7 @@ def user_download(file_name,public_key):
     l = [str(tag),str(public_key)]
     s = '+'.join(l)
     arg = s
-    value_str = send_text(command,arg)    
+    value_str = send_text(command,arg,'Y')    
     #val =edge.download_from_edge(tag, public_key)
     if value_str == '-1':
         print('User: No Access to the file')
@@ -222,9 +241,9 @@ def user_download(file_name,public_key):
     l = [command,arg]
     l_str = '-'.join(l)
     __send(l_str)
-    print('getting files')
+    #print('getting files')
     get_folder_from_edge(file_count)
-    print('done')
+    #print('done')
     for i in range (1,file_count):
         #get file
         cipher_2_int = int(cipher_2_str[i-1])
@@ -243,7 +262,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     arg = s
     value_str = send_text(command,arg)
     #value = edge.check_access_server(file_tag,public_key)
-    print(f'check value: {value_str}')
+    #print(f'check value: {value_str}')
     if value_str =='False':
     #if value ==False:
         print("User: Same Person")
@@ -345,13 +364,13 @@ private_key = rsa.PrivateKey(161975013625261833297723589640652101080754551761278
 new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'test.txt'
+file_name = 'tree.webp'
 group = 'Y'
 update= 'Y'
 old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
+#user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-#user_download(file_name, new_public_key)
+user_download(file_name, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 
