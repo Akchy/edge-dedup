@@ -40,7 +40,7 @@ def handle_user(conn, addr):
             str_to_list = msg.split('-')
             command = str_to_list[0]
             val = str_to_list[1]
-            print(f'command: {command}, val: {val}')        
+            #print(f'command: {command}, val: {val}')        
             value = check_command(command,val,msg,conn)
             if value != 'dav1sh':
                 conn.send(f"return-/{value}".encode(FORMAT))
@@ -97,7 +97,7 @@ def check_command(key,arg,msg,conn):
             l = text.split('-')
             c = l[0]
             a = l[1]
-            print(f'list: {l}')
+            #print(f'list: {l}')
             val =check_command(c,a,text,conn)
         case 'tag':
             val = send_text_server(msg)
@@ -125,7 +125,7 @@ def get_large_text(str_len,conn):
 def send_large_text(text,conn):
     #send length
     message = text.encode(FORMAT)
-    print(f'Large_txt: {message}')
+    #print(f'Large_txt: {message}')
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b' ' * (HEADER - len(send_length))
@@ -146,7 +146,7 @@ def send_text_server(message,large='N'):
     __send_to_server(DISCONNECT_MESSAGE,server_socket)
     #x =server_socket.recv(2048).decode(FORMAT)
     server_socket.close()
-    print(f'msg: {message} \nreturn: {list_string}')
+    #print(f'msg: {message} \nreturn: {list_string}')
     if large=='Y':
         return list_string
     elif list_string:
@@ -183,7 +183,7 @@ def __send(msg,conn):
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b' ' * (HEADER - len(send_length))
-    print(f'msg: {msg}')
+    #print(f'msg: {msg}')
     conn.send(send_length)
     conn.send(message)
 
@@ -203,14 +203,14 @@ def get_folder(count,conn):
         os.mkdir('files')
     if not os.path.exists(edge_input_folder_name):
         os.mkdir(edge_input_folder_name)
-    print(f'count: {count}')
+    #print(f'count: {count}')
     for i in range(int(count)):
         msg_length = conn.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         msg = conn.recv(msg_length).decode(FORMAT)
         l = msg.split('-')
         file_name = l[1]
-        print(f'path: {file_name}')
+        #print(f'path: {file_name}')
         get_file(file_name,conn)
         conn.send('Received File'.encode(FORMAT))
 
@@ -231,7 +231,7 @@ def send_file_to_server(filename):
 
     with open(filename, 'rb') as f:
         data = f.read()
-        print(f'leng: {len(data)}')
+        #print(f'leng: {len(data)}')
         __send_to_server(f'len-{len(data)}',server_socket)
         server_socket.sendall(data)
         # data = f.read(1024)
@@ -267,7 +267,7 @@ def __send_to_server(msg,server_socket):
     message = msg.encode(FORMAT)
     msg_length = len(message)
     if msg_length > 1024:
-        print(f'large_text1-{msg_length}')
+        #print(f'large_text1-{msg_length}')
         __send_to_server(f'large_text-{msg_length}',server_socket)
         server_socket.sendall(message)
     else:
@@ -303,7 +303,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         list = [command,arg]
         message = '-'.join(list)
         val = send_text_server(message)
-        print(f'val: {val}')
+        #print(f'val: {val}')
         #val = server.check_block_exists(str(mod))
         if val=='False':
             command = 'save_block_values'
@@ -324,7 +324,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
     arg = s
     list = [command,arg]
     message = '-'.join(list)
-    print(f'upload to s: {message}')
+    #print(f'upload to s: {message}')
     send_text_server(message)
     #server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
