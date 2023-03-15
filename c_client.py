@@ -27,7 +27,7 @@ user_output_folder_name = 'files/encrypt_blocks/'
 user_down_input_folder_name = 'files/edge_decrypt_blocks/'
 user_down_output_folder_name = 'files/dencrypt_blocks/'
 user_sub_input_folder_name = 'subs_blocks/'
-file_size = 1024
+file_size = 1024*8
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
@@ -53,18 +53,38 @@ def split_message(message,chunk_size):
         chunks.append(message[i:i+chunk_size])
     return chunks
 
-def send_text(key, str):
+def send_text(key, str,large='N'):
     list = [key,str]
     l_str = '-'.join(list)
     print(f'send: {l_str}')
     __send(l_str)
-    list_string=client.recv(1024).decode(FORMAT)
+    #list_string=client.recv(1024).decode(FORMAT)
+    if large=='N':
+        list_string =client.recv(2048).decode(FORMAT)
+    else:
+        msg_len_str = client.recv(HEADER).decode(FORMAT)
+        msg_len = int(msg_len_str)
+        list_string = get_large_text(msg_len)
     print(f'return: {list_string}')
-    list = list_string.split('-/')
-    if list[1]:
+    if large=='Y':
+        return list_string
+    elif list_string:
+        list = list_string.split('-/')
         val = list[1]
         return val
-    
+
+def get_large_text(str_len):
+    large = ''
+    v = True
+    l = int(str_len)
+    while v:
+        data = client.recv(1024).decode(FORMAT)
+        large +=data
+        l = l-len(data)
+        if l<=0:
+            v = False
+    return large    
+
 def send_file(filename):
     send_file_name_list = ['send_file', filename]
     send_file_name_string = '-'.join(send_file_name_list)
@@ -99,7 +119,6 @@ def get_file(filename):
             l = l - len(data)
             if l<=0:
                 v=False
-        print('hola')
 def send_folder(folder_name):
     files = os.listdir(folder_name)
     key = 'folder_share'
@@ -200,7 +219,7 @@ def user_download(file_name,public_key):
     l = [str(tag),str(public_key)]
     s = '+'.join(l)
     arg = s
-    value_str = send_text(command,arg)    
+    value_str = send_text(command,arg,'Y')    
     #val =edge.download_from_edge(tag, public_key)
     if value_str == '-1':
         print('User: No Access to the file')
@@ -345,13 +364,13 @@ private_key = rsa.PrivateKey(161975013625261833297723589640652101080754551761278
 new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'test.txt'
+file_name = 'tree.webp'
 group = 'Y'
 update= 'Y'
 old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
-user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
+#user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-#user_download(file_name, new_public_key)
+user_download(file_name, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update('test.txt',public_key)
 
