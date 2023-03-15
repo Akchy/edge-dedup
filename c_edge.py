@@ -74,7 +74,8 @@ def check_command(key,arg,msg,conn):
             lists = arg.split('+')
             file_tag = lists[0]
             public_key = lists[1]
-            val = download_from_edge(file_tag,public_key)
+            large_text = download_from_edge(file_tag,public_key)
+            send_large_text(large_text,conn)
         case 'download_folder_from_edge':
             send_folder_to_user(conn)
         case 'check_file_tag_exists':
@@ -120,40 +121,17 @@ def get_large_text(str_len,conn):
         if l<=0:
             v = False
     return large
-    
-    '''
-    i=0
-    large = ''
-    while i<count:
-        i+=1
-        data = conn.recv(1024).decode(FORMAT)
-        large +=data
-    return large
-    #Working properly
-    data = conn.recv(1024).decode(FORMAT)
-    large = data
-    print(f'x: {large}')
-    while data:
-        data = conn.recv(1024).decode(FORMAT)
-        large +=data
-        print(f'x: {large}')
-    conn.send(f'large_text-received'.encode(FORMAT))
-    return large
-    ''
-    i=0
-    str = ''
-    while True:
-        i+=1
-        msg_length = conn.recv(HEADER).decode(FORMAT)
-        print(f'msg len: {msg_length}')
-        msg_length = int(msg_length)
-        x = conn.recv(msg_length).decode(FORMAT)
-        print(f'x: {x}: \nloop count: {i} \ncount: {count}')
-        str += x
-        if i==count:
-            break
-    print(f'str: {str}')
-    #'''
+
+def send_large_text(text,conn):
+    #send length
+    message = text.encode(FORMAT)
+    print(f'Large_txt: {message}')
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b' ' * (HEADER - len(send_length))
+    conn.send(send_length)
+    #sendall
+    conn.sendall(message)
 
 def send_text_server(message,large='N'):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
