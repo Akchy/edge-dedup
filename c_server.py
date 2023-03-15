@@ -26,9 +26,9 @@ def handle_client(conn, addr):
             str_to_list = msg.split('-')
             command = str_to_list[0]
             val = str_to_list[1]
-            print(f'command: {command}, val: {val}')
+            #print(f'command: {command}, val: {val}')
             value = check_command(command,val, conn)
-            print(f'valuie: {value}')
+            #print(f'valuie: {value}')
             if value != 'dav1sh':
                 conn.send(f"return-/{value}".encode(FORMAT))
     conn.close()
@@ -62,7 +62,7 @@ def check_command(argument,arg, conn):
             lists = arg.split('+')
             mod = lists[0]
             file_tag = lists[1]
-            print(f'list: {lists}\nmod: {mod}\ntag: {file_tag}')
+            #print(f'list: {lists}\nmod: {mod}\ntag: {file_tag}')
             server.save_block_values(mod, file_tag)
             val ='1'
         case 'get_file_tag_of_block':
@@ -120,11 +120,8 @@ def check_command(argument,arg, conn):
             l = text.split('-')
             c = l[0]
             a = l[1]
-            print(f'list: {l}')
+            #print(f'list: {l}')
             val =check_command(c,a,conn)
-
-        case 'tag':
-            val = get_rce(arg)
         case 'send_file':
             get_file(arg, conn)
         case 'get_file':
@@ -140,7 +137,7 @@ def get_large_text(str_len, conn):
         data = conn.recv(1024).decode(FORMAT)
         large +=data
         l = l-len(data)
-        print(f'larfe: {large}\nDat: {data}\ntyp: {len(data)}')
+        #print(f'larfe: {large}\nDat: {data}\ntyp: {len(data)}')
         if l<=0:
             v = False
     return large
@@ -148,17 +145,13 @@ def get_large_text(str_len, conn):
 def send_large_text(text,conn):
     #send length
     message = text.encode(FORMAT)
-    print(f'Large_txt: {message}')
+    #print(f'Large_txt: {message}')
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b' ' * (HEADER - len(send_length))
     conn.send(send_length)
     #sendall
     conn.sendall(message)
-
-def get_rce(val):
-    print(f"Here's rce value from client: {val}")
-    return 'Davish'
 
 def get_file(filename, file_conn):
 

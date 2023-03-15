@@ -84,7 +84,6 @@ def check_admin(file_tag, public_key):
     return False
 
 def add_owner(file_tag, public_key, new_public_key):
-    print(f'f: {file_tag} pk: {public_key} pk1: {new_public_key}')
     public_key = str(public_key)
     new_public_key= str(new_public_key)
     file_tag = str(file_tag)
