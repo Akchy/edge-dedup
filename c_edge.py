@@ -231,7 +231,6 @@ def send_file_to_server(filename):
 
     with open(filename, 'rb') as f:
         data = f.read()
-        #print(f'leng: {len(data)}')
         __send_to_server(f'len-{len(data)}',server_socket)
         server_socket.sendall(data)
         # data = f.read(1024)
@@ -303,7 +302,6 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
         list = [command,arg]
         message = '-'.join(list)
         val = send_text_server(message)
-        #print(f'val: {val}')
         #val = server.check_block_exists(str(mod))
         if val=='False':
             command = 'save_block_values'
@@ -314,7 +312,6 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             message = '-'.join(list)
             send_text_server(message)
             send_file_to_server(block_path)
-            #server.save_block_vales(str(mod), file_tag)
             #Send only the unique ones.
 
     block_tags_list= '/'.join(str(b) for b in block_tags)
