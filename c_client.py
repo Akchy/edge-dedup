@@ -23,9 +23,8 @@ prime1 = 85317060646768443274134832250229019514319591632920326205376943415602602
 prime2 = 154813591145766135381307408100320581872727279802381926251921153367959654726445983463789452039725321237307989748816194466520946981165617567414284940369508252295621408568741594522799840574828305266316028435844847717554430653505159371815836799626994815914862273363768236564919004629159198309175554423687355013493
 temp = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
 user_input_folder_name = 'files/blocks/'
-user_output_folder_name = 'files/encrypt_blocks/'
-user_down_input_folder_name = 'files/edge_decrypt_blocks/'
-user_down_output_folder_name = 'files/dencrypt_blocks/'
+user_down_input_folder_name = 'files/edge_decrypt_blocks_'
+user_down_output_folder_name = 'files/dencrypt_blocks_'
 user_sub_input_folder_name = 'subs_blocks/'
 file_size = 1024
 
@@ -119,11 +118,13 @@ def get_file(filename):
             l = l - len(data)
             if l<=0:
                 v=False
-def send_folder(folder_name):
+def send_folder(folder_name, file_tag):
     files = os.listdir(folder_name)
     key = 'folder_share'
-    val = str(len(files))
-    command = key+'-'+val
+    l = str(len(files))
+    li = [l,file_tag]
+    li_str = '+'.join(li)
+    command = key+'-'+li_str
     __send(command)
     for file in files:
         file_path = folder_name+file
@@ -192,11 +193,12 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
         cuckoo_mod = modulo_hash_file(block_path,prime2)
         cuckoo_blocks.append(cuckoo_mod)
         bytes_K = mod.to_bytes(32, 'big')
+        user_output_folder_name = user_output_folder_name + str(file_tag)+'/'
         aes_encrypt_file(bytes_K, iv, user_input_folder_name, user_output_folder_name,block_name)
         bytes_cipher = aes_encrypt_byte(rce_key,mod)
         int_cipher = int.from_bytes(bytes_cipher,'big')
         cipher_2.append(int_cipher)
-    send_folder(user_output_folder_name)
+    send_folder(user_output_folder_name, file_tag)
     int_rce_key = int.from_bytes(rce_key,'big')
     cipher_3 = int_rce_key ^ prime2
     
@@ -206,7 +208,7 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
 def user_download(file_tag,public_key):
-
+    user_down_input_folder_name = user_down_input_folder_name + str(file_tag)+'/'
     if not os.path.exists(user_down_input_folder_name):
         os.mkdir(user_down_input_folder_name)
     val_tag = check_for_update(file_tag,'N')
@@ -236,7 +238,7 @@ def user_download(file_tag,public_key):
     file_count = int(file_count[:-1])
 
     command = 'download_folder_from_edge'
-    arg = '1'
+    arg = str(tag)
     l = [command,arg]
     l_str = '-'.join(l)
     __send(l_str)
@@ -249,6 +251,8 @@ def user_download(file_tag,public_key):
         byte_cipher = cipher_2_int.to_bytes(64,'big')
         block_key = aes_decrypt_byte(rce_key,byte_cipher)
         file_name = 'block{}.bin'.format(i)
+        user_down_input_folder_name = user_down_input_folder_name + str(tag)+'/'
+        user_down_output_folder_name = user_down_output_folder_name + + str(tag)+'/'
         aes_decrypt_file(block_key, iv, user_down_input_folder_name, user_down_output_folder_name,file_name)
     save_file_name = 'downloaded_'+save_file_name
     merge_blocks(user_down_output_folder_name,save_file_name)

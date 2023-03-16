@@ -17,10 +17,10 @@ edge_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 edge_socket.bind(EDGE_ADDR)
 
 
-edge_input_folder_name = 'files/encrypt_blocks/'
-edge_output_folder_name = 'files/edge_encrypt_blocks/'
-edge_down_input_folder_name = 'files/edge_encrypt_blocks/'
-edge_output_down_folder_name = 'files/edge_decrypt_blocks/'
+edge_input_folder_name = 'files/encrypt_blocks_'
+edge_output_folder_name = 'files/edge_encrypt_blocks_'
+edge_down_input_folder_name = 'files/edge_encrypt_blocks_'
+edge_output_down_folder_name = 'files/edge_decrypt_blocks_'
 
 
 prime2 = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
@@ -51,7 +51,10 @@ def check_command(key,arg,msg,conn):
     val = 'dav1sh'
     match key:
         case 'folder_share':
-            get_folder(arg,conn)
+            lists = arg.split('+')
+            file_count = lists[0]
+            file_tag = lists[1]
+            get_folder(file_count,file_tag,conn)
         case 'get_edge_rce_key':
             b = get_edge_rce_key()
             int_byte = int.from_bytes(b,'big')
@@ -77,7 +80,7 @@ def check_command(key,arg,msg,conn):
             large_text = download_from_edge(file_tag,public_key)
             send_large_text(large_text,conn)
         case 'download_folder_from_edge':
-            send_folder_to_user(conn)
+            send_folder_to_user(file_tag, conn)
         case 'check_file_tag_exists':
             val = send_text_server(message=msg)
         case 'check_access':
@@ -99,11 +102,11 @@ def check_command(key,arg,msg,conn):
             a = l[1]
             #print(f'list: {l}')
             val =check_command(c,a,text,conn)
-        case 'tag':
-            val = send_text_server(msg)
-        case 'send_file':
-            get_file(arg, conn)
-            send_file_to_server(arg)
+        # case 'tag':
+        #     val = send_text_server(msg)
+        # # case 'send_file':
+        # #     get_file(arg, conn)
+        # #     send_file_to_server(arg)
         # case 'get_file':
         #     get_file_from_server(arg)
         #     send_file(arg, conn)
@@ -198,9 +201,10 @@ def send_file(filename, file_conn):
         #file_conn.send(f'file_name-{filename}-{data_len}'.encode(FORMAT))
         file_conn.sendall(data)
 
-def get_folder(count,conn):
+def get_folder(count,tag,conn):
     if not os.path.exists('files'):
         os.mkdir('files')
+    edge_input_folder_name = edge_input_folder_name + str(tag)+'/'
     if not os.path.exists(edge_input_folder_name):
         os.mkdir(edge_input_folder_name)
     #print(f'count: {count}')
@@ -214,8 +218,8 @@ def get_folder(count,conn):
         get_file(file_name,conn)
         conn.send('Received File'.encode(FORMAT))
 
-def send_folder_to_user(conn):
-    folder_name = edge_output_down_folder_name
+def send_folder_to_user(file_tag, conn):
+    folder_name = edge_output_down_folder_name + str(file_tag)+'/'
     files = os.listdir(folder_name)
     for file in files:
         file_path = folder_name+file
@@ -292,8 +296,9 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
     for i in range (1,int(file_count)):
         o_file_name = str(file_tag)+'_{}.bin'.format(i)
         block_name = 'block{}.bin'.format(i)
+        edge_output_folder_name = edge_output_folder_name + str(file_tag)+'/'
+        edge_input_folder_name = edge_input_folder_name + str(file_tag)+'/'
         AES.aes_encrypt_file(edge_key, iv, edge_input_folder_name, edge_output_folder_name,block_name,o_file_name)
-
         block_path = edge_output_folder_name+o_file_name
         mod = modulo_hash_file(block_path,prime2)
         block_tags.append(mod)
@@ -372,10 +377,12 @@ def download_from_edge(file_tag, public_key):
         input_file_name = str(block_suffix)+'_{}.bin'.format(index)
         if not os.path.exists('files'):
             os.mkdir('files')
+        edge_down_input_folder_name = edge_down_input_folder_name + str(file_tag)+'/'
         if not os.path.exists(edge_down_input_folder_name):
             os.mkdir(edge_down_input_folder_name)
         file_path = edge_down_input_folder_name+input_file_name
         get_file_from_server(file_path)
+        edge_output_down_folder_name = edge_output_down_folder_name + str(file_tag)+'/'
         AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name, edge_output_down_folder_name,block_name,input_file_name)
     l = [cipher_2, cipher_3, metadata_str]
     l_str = '*'.join(l)    
