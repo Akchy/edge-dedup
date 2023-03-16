@@ -27,7 +27,7 @@ user_output_folder_name = 'files/encrypt_blocks/'
 user_down_input_folder_name = 'files/edge_decrypt_blocks/'
 user_down_output_folder_name = 'files/dencrypt_blocks/'
 user_sub_input_folder_name = 'subs_blocks/'
-file_size = 1024*8
+file_size = 1024
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
@@ -205,12 +205,11 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
         file.write('\n\npublic= {} \nprivate= {}'.format(public_key,private_key))
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
-def user_download(file_name,public_key):
+def user_download(file_tag,public_key):
 
     if not os.path.exists(user_down_input_folder_name):
         os.mkdir(user_down_input_folder_name)
-    file_tag = get_file_tag(file_name)
-    val_tag = check_for_update(file_name,'N')
+    val_tag = check_for_update(file_tag,'N')
     if val_tag!='0' and val_tag !='-1':
         tag = val_tag        
     else:
@@ -303,8 +302,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         #x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
 
-def check_for_update(file_name, display='Y'):
-    file_tag = get_file_tag(file_name)
+def check_for_update(file_tag, display='Y'):
     command = 'check_for_update'
     arg = str(file_tag)
     val = send_text(command,arg)
@@ -316,7 +314,7 @@ def check_for_update(file_name, display='Y'):
     elif val == '-1':
         print('User: No File in server, Upload as a New File')
     else:
-        print('User: A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val[0]))
+        print('User: A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val))
         print('\nUser: Please use the below mentioned file tag while updating: \nOld File Tag: {}\n'.format(file_tag))
 
 def add_user(file_name, public_key, new_public_key):
@@ -364,15 +362,16 @@ private_key = rsa.PrivateKey(161975013625261833297723589640652101080754551761278
 new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'tree.webp'
+file_name = 'test.txt'
 group = 'Y'
 update= 'Y'
 old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
+file_tag = '35453035832504594462358801387938398333687165557252820666584838873299798687463'
 #user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-user_download(file_name, public_key)
+user_download(file_tag, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
-#check_for_update('test.txt',public_key)
+#check_for_update(old_tag,public_key)
 
 #delete_user(file_name, public_key, new_public_key)
 #add_user(file_name, public_key, new_public_key)
