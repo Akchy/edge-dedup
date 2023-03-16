@@ -100,7 +100,7 @@ def get_file_tag_of_block(block_tag):
 
 def get_index_of_block(block_tag,file_tag):
     block_tags_string = get_block_values(file_tag)
-    block_tags = block_tags_string.split('-')
+    block_tags = block_tags_string.split('/')
     index = block_tags.index(block_tag)
     return index
 

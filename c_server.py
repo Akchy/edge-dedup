@@ -67,6 +67,11 @@ def check_command(argument,arg, conn):
             val ='1'
         case 'get_file_tag_of_block':
             val = server.get_file_tag_of_block(block_tag=arg)
+        case 'get_index_of_block':
+            lists = arg.split('+')
+            block_tag = lists[0]
+            file_tag = lists[1]
+            val = server.get_index_of_block(block_tag,file_tag)
         case 'blocks_to_server_cuckoo':
             lists = arg.split('+')
             file_tag = lists[0]
@@ -109,11 +114,13 @@ def check_command(argument,arg, conn):
             new_public_key = lists[2]
             val = str(server.delete_user(file_tag, public_key, new_public_key))
         case 'download_from_server':
+            print('hola start')
             lists = arg.split('+')
             file_tag = lists[0]
             public_key = lists[1]
             large_text = server.download_from_server(file_tag, public_key)
             send_large_text(large_text,conn)
+            print('hola done')
             #large val possibility
         case 'large_text':
             text = get_large_text(arg,conn)
@@ -173,6 +180,7 @@ def get_file(filename, file_conn):
             l = l - len(data)
             if l<=0:
                 v=False
+    f.close()
     # with open(filename, 'wb') as f:
     #     data = file_conn.recv(1024)
     #     while data:
