@@ -102,7 +102,7 @@ def get_index_of_block(block_tag,file_tag):
     block_tags_string = get_block_values(file_tag)
     block_tags = block_tags_string.split('/')
     index = block_tags.index(block_tag)
-    return index
+    return index+1
 
 def check_for_update(file_tag):
     val = db.get_latest_file_tag(file_tag)

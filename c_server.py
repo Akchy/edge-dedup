@@ -10,7 +10,7 @@ SERVER = socket.gethostname()
 ADDR = ('', PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
-edge_output_folder_name = 'files/edge_encrypt_blocks/'
+edge_output_folder_name = 'files/edge_encrypted_blocks_'
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
@@ -114,13 +114,11 @@ def check_command(argument,arg, conn):
             new_public_key = lists[2]
             val = str(server.delete_user(file_tag, public_key, new_public_key))
         case 'download_from_server':
-            print('hola start')
             lists = arg.split('+')
             file_tag = lists[0]
             public_key = lists[1]
             large_text = server.download_from_server(file_tag, public_key)
             send_large_text(large_text,conn)
-            print('hola done')
             #large val possibility
         case 'large_text':
             text = get_large_text(arg,conn)
@@ -130,7 +128,10 @@ def check_command(argument,arg, conn):
             #print(f'list: {l}')
             val =check_command(c,a,conn)
         case 'send_file':
-            get_file(arg, conn)
+            lists = arg.split('+')
+            file_name = lists[0]
+            file_tag = lists[1]
+            get_file(file_name, file_tag, conn)
         case 'get_file':
             send_file(arg, conn)
             x = conn.recv(13).decode(FORMAT)
@@ -160,12 +161,13 @@ def send_large_text(text,conn):
     #sendall
     conn.sendall(message)
 
-def get_file(filename, file_conn):
+def get_file(filename, file_tag, file_conn):
 
     if not os.path.exists('files'):
         os.mkdir('files')
-    if not os.path.exists(edge_output_folder_name):
-        os.mkdir(edge_output_folder_name)
+    edge_output_folder_name1 = edge_output_folder_name + file_tag + '/'
+    if not os.path.exists(edge_output_folder_name1):
+        os.mkdir(edge_output_folder_name1)
     msg_length = file_conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     msg = file_conn.recv(msg_length).decode(FORMAT)
