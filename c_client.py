@@ -4,6 +4,7 @@ import socket
 import rsa
 from mod.enc.aes import *
 from mod.modulo_hash import *
+from datetime import datetime
 from mod.enc.sarce import get_rce_key
 from mod.divide_files import merge_blocks
 from mod.enc.rsa_keys import generate_keys, rsa_decypt
@@ -27,7 +28,7 @@ user_output_folder_name = 'files/encrypted_blocks_'
 user_down_input_folder_name = 'files/edge_decrypted_blocks_'
 user_down_output_folder_name = 'files/decrypted_blocks_'
 user_sub_input_folder_name = 'subs_blocks/'
-file_size = 1024
+file_size = 1024*8
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
 if not os.path.exists('files'):
@@ -145,27 +146,34 @@ def get_folder_from_edge(file_count):
     
 
 def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_file_tag=''):
+    print(f'Key from edge, time: {datetime.now()}')
     file_tag = get_file_tag(file_name)
+    print(f'file_tag, time: {datetime.now()}')
     # RCE Key Generation
     command = 'get_edge_rce_key'
     arg = 'key'
     int_edge_rce_key = int(send_text(command,arg))
     edge_rce_key = int_edge_rce_key.to_bytes(16, 'big')
     #edge_rce_key = edge.get_edge_rce_key()
+    print(f'RCE Key, time: {datetime.now()}')
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
     command = 'check_file_tag_exists'
     arg = str(file_tag)
     file_exists_str = send_text(command,arg)
+    print(f'check file exists, time: {datetime.now()}')
     if file_exists_str == 'True':
         file_exists = True
     else:
         file_exists = False
     #file_exists = edge.check_file_tag_exists_server(file_tag)
     if is_update=='N' and file_exists == True:
+        print('Subs upload')
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
+        print('New Upload')
         file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
+        print(f'Encryption Done, time: {datetime.now()}')
         metadata = [file_name,file_count]
         cipher_2_list= '/'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '/'.join(str(c) for c in cuckoo_blocks)
@@ -183,6 +191,7 @@ def get_file_tag(file_name):
 
 def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     file_count=divide_file_by_size(file_name, file_size, user_input_folder_name)
+    print(f'Files Divided, time: {datetime.now()}')
     block_keys = []
     cuckoo_blocks = []
     cipher_2 = []
@@ -209,19 +218,22 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
 def user_download(file_tag,public_key):
-    user_down_input_folder_name1 = user_down_input_folder_name + str(file_tag)+'/'
-    if not os.path.exists(user_down_input_folder_name1):
-        os.mkdir(user_down_input_folder_name1)
+    print(f'download_started, time: {datetime.now()}')
     val_tag = check_for_update(file_tag,'N')
     if val_tag!='0' and val_tag !='-1':
-        tag = val_tag        
+        tag = val_tag
     else:
         tag = file_tag
+    print(f'checked for update, time: {datetime.now()}')
+    user_down_input_folder_name1 = user_down_input_folder_name + str(tag)+'/'
+    if not os.path.exists(user_down_input_folder_name1):
+        os.mkdir(user_down_input_folder_name1)
     command = 'download_from_edge'
     l = [str(tag),str(public_key)]
     s = '+'.join(l)
     arg = s
-    value_str = send_text(command,arg,'Y')    
+    value_str = send_text(command,arg,'Y')
+    print(f'metadata received, time: {datetime.now()}')
     #val =edge.download_from_edge(tag, public_key)
     if value_str == '-1':
         print('User: No Access to the file')
@@ -237,7 +249,6 @@ def user_download(file_tag,public_key):
     int_rce_key = cipher_3_int ^prime2
     rce_key = int_rce_key.to_bytes(24,'big')
     file_count = int(file_count[:-1])
-
     command = 'download_folder_from_edge'
     arg = str(tag)
     l = [command,arg]
@@ -245,6 +256,7 @@ def user_download(file_tag,public_key):
     __send(l_str)
     #print('getting files')
     get_folder_from_edge(file_count)
+    print(f'file received, time: {datetime.now()}')
     #print('done')
     for i in range (1,file_count):
         #get file
@@ -259,6 +271,7 @@ def user_download(file_tag,public_key):
     print('User: File downloaded and saved under the name: ',save_file_name)
 
 def subs_upload(file_name, file_tag, public_key, private_key):
+    print(f'Subs started, time: {datetime.now()}')
     command = 'check_access'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
@@ -279,12 +292,15 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         os.mkdir('subs_blocks')
     block_list = value
     _=divide_file_by_size(file_name, file_size, user_sub_input_folder_name)
+
+    print(f'files divides, time: {datetime.now()}')
     block_keys = []
     for i in block_list:
         file_name = 'block{}.bin'.format(i)
         file_path = user_sub_input_folder_name+file_name
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
+    print(f' block keys done, time: {datetime.now()}')
     command = 'blocks_to_server_cuckoo'
     block_keys_str = '/'.join(str(b) for b in block_keys)
     l = [str(file_tag),block_keys_str,str(public_key)]
@@ -295,6 +311,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     b_len = int(li[0])
     b_int = int(li[1])
     cipher = b_int.to_bytes(b_len,'big')
+    print(f' received time, time: {datetime.now()}')
     #val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
     if val != '-1':
         time_dec = rsa_decypt(private_key,cipher)
@@ -305,6 +322,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         x = send_text(command,arg)
         #x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
+    print(f' Subs Upload done, time: {datetime.now()}')
 
 def check_for_update(file_tag, display='Y'):
     command = 'check_for_update'
@@ -366,14 +384,15 @@ private_key = rsa.PrivateKey(161975013625261833297723589640652101080754551761278
 new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'test.txt'
+file_name = 'debian.iso'
 group = 'Y'
-update= 'Y'
+update= 'N'
 old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
 file_tag = '62083022736372406286878543231345933678695456481173225593791197450501253020534'
-#user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
+new_tag = '43439016252719349001350333880316096674018789395488878928736197793747174455563'
+user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-user_download(file_tag, public_key)
+#user_download(new_tag, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update(old_tag,public_key)
 
