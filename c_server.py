@@ -37,6 +37,11 @@ def handle_client(conn, addr):
 def check_command(argument,arg, conn):
     val = 'dav1sh'
     match argument:
+        case 'folder_share':
+            lists = arg.split('+')
+            file_count = lists[0]
+            file_tag = lists[1]
+            get_folder(file_count,file_tag,conn)
         case 'check_file_tag_exists':
             bool_val = server.check_file_tag_exists(file_tag=arg)
             if bool_val:
@@ -52,26 +57,18 @@ def check_command(argument,arg, conn):
                 val = 'False'
             else:
                 val = '*'.join(str(i) for i in value)
-        case 'check_block_exists':
-            bool_val = server.check_block_exists(arg)
-            if bool_val:
-                val = 'True'
-            else:
-                val = 'False'
-        case 'save_block_values':
+        case 'save_block_exists_if_not_exists':
+            print(f'block checking: {datetime.now()}')
             lists = arg.split('+')
-            mod = lists[0]
+            block_tags_lists = lists[0]
             file_tag = lists[1]
-            #print(f'list: {lists}\nmod: {mod}\ntag: {file_tag}')
-            server.save_block_values(mod, file_tag)
-            val ='1'
+            value =server.save_block_exists_if_not_exists(block_tags_lists,file_tag)
+            send_large_text(value,conn)
         case 'get_file_tag_of_block':
-            val = server.get_file_tag_of_block(block_tag=arg)
-        case 'get_index_of_block':
             lists = arg.split('+')
             block_tag = lists[0]
             file_tag = lists[1]
-            val = server.get_index_of_block(block_tag,file_tag)
+            val = server.get_file_tag_and_index_of_block(block_tag,file_tag)
         case 'blocks_to_server_cuckoo':
             lists = arg.split('+')
             file_tag = lists[0]
@@ -200,6 +197,23 @@ def send_file(filename, file_conn):
         file_conn.send(send_length)
         file_conn.send(length_com.encode(FORMAT))
         file_conn.sendall(data)
+
+def get_folder(count,tag,conn):
+    if not os.path.exists('files'):
+        os.mkdir('files')
+    edge_output_folder_name1 = edge_output_folder_name + tag + '/'
+    if not os.path.exists(edge_output_folder_name1):
+        os.mkdir(edge_output_folder_name1)
+    #print(f'count: {count}')
+    for i in range(int(count)):
+        msg_length = conn.recv(HEADER).decode(FORMAT)
+        msg_length = int(msg_length)
+        msg = conn.recv(msg_length).decode(FORMAT)
+        l = msg.split('-')
+        file_name = l[1]
+        #print(f'path: {file_name}')
+        get_file(file_name,tag,conn)
+        conn.send('Received File'.encode(FORMAT))
 
 
 def start():

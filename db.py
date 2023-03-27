@@ -273,23 +273,25 @@ def get_time_hash(public_key):
         return myresult[0]
     else:
         return '-1' # No time saved for Public Key
-    
-def save_block_values(block_name, file_tag):
-    cursor = server_db.cursor()
-    cursor.execute("create table if not exists block_table (id INT AUTO_INCREMENT PRIMARY KEY, block_tag LONGTEXT, file_tag VARCHAR(255))")
-    cursor.execute("insert into block_table (block_tag, file_tag) values(%s, %s)",(block_name, file_tag))
-    cursor.reset()
 
-
-def check_block_exists(block_tag):
+def check_block_exists(block_tags,file_tag):
+    lists = []
+    for l in block_tags:
+        tup = (l,file_tag,l)
+        lists.append(tup)
     cursor= server_db.cursor()
-    cursor.execute("select id from block_table where block_tag=%s",(block_tag,))
-    myresult = cursor.fetchone()
+    sql = "INSERT INTO block_table (block_tag, file_tag) SELECT * FROM (SELECT %s as block_tag, %s as file_tag) AS tmp WHERE NOT EXISTS ( SELECT id FROM block_table WHERE block_tag=%s ) LIMIT 1;"
+    cursor.executemany(sql,lists)
+    server_db.commit()
     cursor.reset()
-    if myresult!= None:
-        return True
-    else:
-        return False
+    return get_saved_block_tags(file_tag)
+
+def get_saved_block_tags(file_tag):
+    cursor = server_db.cursor()
+    cursor.execute("select block_tag from block_table where file_tag=%s",(file_tag,))
+    myresult = cursor.fetchall()
+    cursor.reset()
+    return myresult 
 
 def get_block_values(file_tag):
     cursor = server_db.cursor()
@@ -340,3 +342,5 @@ get_time_hash(public_key)
 #get_block_values(file_tag)
 #'''
 #add_owner(file_tag,public_key,new_public_key)
+#f = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
+#get_saved_block_tags(f)
