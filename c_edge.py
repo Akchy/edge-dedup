@@ -3,6 +3,7 @@ import socket
 import threading
 import mod.enc.aes as AES
 from mod.modulo_hash import *
+from datetime import datetime
 from Crypto.Random import get_random_bytes
 
 HEADER = 64
@@ -25,7 +26,8 @@ edge_output_down_folder_name = 'files/edge_decrypted_blocks_'
 
 prime2 = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
-edge_key = b'\xe8\xab\xad\xb9@Z<f\xd2\xa6\x96\xbb\xfe\xbb2\x14\x17\xea\x0f\xb4\xffQOr\xc8R\xfcT;j\xe7V'
+edge_key = b'h\xa4\x0f2:\xe8\xc0@%3\xad\xce\xfb\xdaUz'
+#edge_key = b'\xe8\xab\xad\xb9@Z<f\xd2\xa6\x96\xbb\xfe\xbb2\x14\x17\xea\x0f\xb4\xffQOr\xc8R\xfcT;j\xe7V'
 
 
 def handle_user(conn, addr):
@@ -281,6 +283,23 @@ def __send_to_server(msg,server_socket):
         server_socket.send(send_length)
         server_socket.send(message)
 
+def send_folder(folder_name, file_tag,saved_blocks):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect(SERVER_ADDR)
+    files = os.listdir(folder_name)
+    key = 'folder_share'
+    l = str(len(saved_blocks))
+    li = [l,str(file_tag)]
+    li_str = '+'.join(li)
+    command = key+'-'+li_str
+    __send_to_server(command,server_socket)
+    for file in files:
+        file_path = folder_name+file
+        if file in saved_blocks:
+            send_file(file_path,server_socket)
+            x = server_socket.recv(13).decode(FORMAT)
+    server_socket.close()
+
 def start():
     edge_socket.listen()
     print(f"[LISTENING] Edge is listening on {EDGE}")
@@ -294,21 +313,25 @@ def get_edge_rce_key():
 
 
 def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cuckoo_blocks, metadata, is_update, old_file_tag):
-    block_tags=[]
+    #print(f'Encrypting, time: {datetime.now()}')
     for i in range (1,int(file_count)):
         block_name = 'block{}.bin'.format(i)
         edge_output_folder_name1 = edge_output_folder_name + str(file_tag)+'/'
         edge_input_folder_name1 = edge_input_folder_name + str(file_tag)+'/'
         AES.aes_encrypt_file(edge_key, iv, edge_input_folder_name1, edge_output_folder_name1,block_name)
+
+    #print(f'Encrypt Done, time: {datetime.now()}')
+    block_tags=[]
+    block_names = []
+    for i in range (1,int(file_count)):
+        block_name = 'block{}.bin'.format(i)
+        edge_output_folder_name1 = edge_output_folder_name + str(file_tag)+'/'
         block_path = edge_output_folder_name1+block_name
         mod = modulo_hash_file(block_path,prime2)
         block_tags.append(mod)
-        command = 'check_block_exists'
-        arg = str(mod)
-        list = [command,arg]
-        message = '-'.join(list)
-        val = send_text_server(message)
+        block_names.append(block_name)
         #val = server.check_block_exists(str(mod))
+        '''
         if val=='False':
             command = 'save_block_values'
             l = [str(mod),str(file_tag)]
@@ -317,10 +340,22 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
             list = [command,arg]
             message = '-'.join(list)
             send_text_server(message)
-            send_file_to_server(block_path,file_tag)
+            #send_file_to_server(block_path,file_tag)
             #Send only the unique ones.
-
+        #'''
+    #print(f'blocks done, time: {datetime.now()}')
     block_tags_list= '/'.join(str(b) for b in block_tags)
+    command = 'save_block_exists_if_not_exists'
+    l = [block_tags_list,str(file_tag)]
+    s = '+'.join(l)
+    arg = s
+    list = [command,arg]
+    message = '-'.join(list)
+    saved_blocks_str = send_text_server(message,large='Y')
+    saved_blocks = saved_blocks_str.split('*')
+    #print(f'blocks saved, time: {datetime.now()}')
+    send_folder(edge_output_folder_name1,file_tag,saved_blocks)
+    #print(f'folder sent, time: {datetime.now()}')
     command = 'upload_to_server'
     l = [str(file_tag),str(public_key), group,cipher_2,str(cipher_3),block_tags_list, cuckoo_blocks, str(metadata), is_update, str(old_file_tag)]
     s = '+'.join(l)
@@ -332,6 +367,7 @@ def upload_to_edge(file_tag, public_key, group, file_count,cipher_2,cipher_3, cu
     #server.upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags_list, cuckoo_blocks, metadata, is_update, old_file_tag)
 
 def download_from_edge(file_tag, public_key):
+    #print(f'Download_started, time: {datetime.now()}')
     command = 'download_from_server'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
@@ -339,6 +375,7 @@ def download_from_edge(file_tag, public_key):
     list = [command,arg]
     message = '-'.join(list)
     val_str = send_text_server(message,large='Y')
+    #print(f'received large text, time: {datetime.now()}')
     #val = server.download_from_server(file_tag, public_key)
     if val_str == '-1':
         return '-1' # No Access
@@ -352,38 +389,48 @@ def download_from_edge(file_tag, public_key):
     file_count = file_count[:-1]
     tag_list_string= block_tags
     tag_list = tag_list_string.split('/')
+    file_list = []
+    block_name_list=[]
+    input_name =[]
     for i in range (1,int(file_count)):
-        block_name = 'block{}.bin'.format(i)
+        
         block_tag = tag_list[i-1]
         command = 'get_file_tag_of_block'
-        arg = block_tag
+        l = [str(block_tag),str(file_tag)]
+        s = '+'.join(l)
+        arg = s
         list = [command,arg]
         message = '-'.join(list)
-        file_tag_of_block = send_text_server(message)
-        #file_tag_of_block = server.get_file_tag_of_block(block_tag) #define
-        if file_tag != file_tag_of_block:
-            command = 'get_index_of_block'
-            l = [str(block_tag),str(file_tag)]
-            s = '+'.join(l)
-            arg = s
-            list = [command,arg]
-            message = '-'.join(list)
-            index = send_text_server(message)
-            #index = server.get_index_of_block(block_tag,file_tag)+1 #define
-            block_suffix = file_tag_of_block
-            #fetch block
+        value = send_text_server(message)
+        if value != 'Same':
+            li = value.split('*')
+            index = li[0]
+            block_suffix = li[1]
         else:
             index = i
             block_suffix = file_tag
+        block_name = 'block{}.bin'.format(index)
         if not os.path.exists('files'):
             os.mkdir('files')
         edge_down_input_folder_name1 = edge_down_input_folder_name + str(block_suffix)+'/'
         if not os.path.exists(edge_down_input_folder_name1):
             os.mkdir(edge_down_input_folder_name1)
         file_path = edge_down_input_folder_name1+block_name
-        get_file_from_server(file_path)
+        file_list.append(file_path)
+        block_name_list.append(block_name)
+        input_name.append(edge_down_input_folder_name1)
+    
+    #print(f'datas calculated, time: {datetime.now()}')
+    for files in file_list:
+        get_file_from_server(files)
+    
+    #print(f'files received, time: {datetime.now()}')
+    for block_name in block_name_list:
         edge_output_down_folder_name1 = edge_output_down_folder_name + str(file_tag)+'/'
+        edge_down_input_folder_name1 = input_name[block_name_list.index(block_name)]
         AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name1, edge_output_down_folder_name1,block_name)
+    
+    #print(f'files decrypted, time: {datetime.now()}')
     l = [cipher_2, cipher_3, metadata_str]
     l_str = '*'.join(l)    
     return l_str
