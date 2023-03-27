@@ -146,34 +146,34 @@ def get_folder_from_edge(file_count):
     
 
 def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_file_tag=''):
-    print(f'Key from edge, time: {datetime.now()}')
+    #print(f'Key from edge, time: {datetime.now()}')
     file_tag = get_file_tag(file_name)
-    print(f'file_tag, time: {datetime.now()}')
+    #print(f'file_tag, time: {datetime.now()}')
     # RCE Key Generation
     command = 'get_edge_rce_key'
     arg = 'key'
     int_edge_rce_key = int(send_text(command,arg))
     edge_rce_key = int_edge_rce_key.to_bytes(16, 'big')
     #edge_rce_key = edge.get_edge_rce_key()
-    print(f'RCE Key, time: {datetime.now()}')
+    #print(f'RCE Key, time: {datetime.now()}')
     str_rce_key = get_rce_key(file_tag,edge_rce_key)
     rce_key = bytes(str_rce_key[0:24],'utf-8')
     command = 'check_file_tag_exists'
     arg = str(file_tag)
     file_exists_str = send_text(command,arg)
-    print(f'check file exists, time: {datetime.now()}')
+    #print(f'check file exists, time: {datetime.now()}')
     if file_exists_str == 'True':
         file_exists = True
     else:
         file_exists = False
     #file_exists = edge.check_file_tag_exists_server(file_tag)
     if is_update=='N' and file_exists == True:
-        print('Subs upload')
+        #print('Subs upload')
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
-        print('New Upload')
+        #print('New Upload')
         file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
-        print(f'Encryption Done, time: {datetime.now()}')
+        #print(f'Encryption Done, time: {datetime.now()}')
         metadata = [file_name,file_count]
         cipher_2_list= '/'.join(str(c) for c in cipher_2)
         cuckoo_blocks_list= '/'.join(str(c) for c in cuckoo_blocks)
@@ -191,7 +191,7 @@ def get_file_tag(file_name):
 
 def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     file_count=divide_file_by_size(file_name, file_size, user_input_folder_name)
-    print(f'Files Divided, time: {datetime.now()}')
+    #print(f'Files Divided, time: {datetime.now()}')
     block_keys = []
     cuckoo_blocks = []
     cipher_2 = []
@@ -218,13 +218,13 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
 def user_download(file_tag,public_key):
-    print(f'download_started, time: {datetime.now()}')
+    #print(f'download_started, time: {datetime.now()}')
     val_tag = check_for_update(file_tag,'N')
     if val_tag!='0' and val_tag !='-1':
         tag = val_tag
     else:
         tag = file_tag
-    print(f'checked for update, time: {datetime.now()}')
+    #print(f'checked for update, time: {datetime.now()}')
     user_down_input_folder_name1 = user_down_input_folder_name + str(tag)+'/'
     if not os.path.exists(user_down_input_folder_name1):
         os.mkdir(user_down_input_folder_name1)
@@ -233,7 +233,7 @@ def user_download(file_tag,public_key):
     s = '+'.join(l)
     arg = s
     value_str = send_text(command,arg,'Y')
-    print(f'metadata received, time: {datetime.now()}')
+    #print(f'metadata received, time: {datetime.now()}')
     #val =edge.download_from_edge(tag, public_key)
     if value_str == '-1':
         print('User: No Access to the file')
@@ -256,7 +256,7 @@ def user_download(file_tag,public_key):
     __send(l_str)
     #print('getting files')
     get_folder_from_edge(file_count)
-    print(f'file received, time: {datetime.now()}')
+    #print(f'file received, time: {datetime.now()}')
     #print('done')
     for i in range (1,file_count):
         #get file
@@ -271,7 +271,7 @@ def user_download(file_tag,public_key):
     print('User: File downloaded and saved under the name: ',save_file_name)
 
 def subs_upload(file_name, file_tag, public_key, private_key):
-    print(f'Subs started, time: {datetime.now()}')
+    #print(f'Subs started, time: {datetime.now()}')
     command = 'check_access'
     l = [str(file_tag),str(public_key)]
     s = '+'.join(l)
@@ -293,14 +293,14 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     block_list = value
     _=divide_file_by_size(file_name, file_size, user_sub_input_folder_name)
 
-    print(f'files divides, time: {datetime.now()}')
+    #print(f'files divides, time: {datetime.now()}')
     block_keys = []
     for i in block_list:
         file_name = 'block{}.bin'.format(i)
         file_path = user_sub_input_folder_name+file_name
         mod = modulo_hash_file(file_path,prime2)
         block_keys.append(mod)
-    print(f' block keys done, time: {datetime.now()}')
+    #print(f' block keys done, time: {datetime.now()}')
     command = 'blocks_to_server_cuckoo'
     block_keys_str = '/'.join(str(b) for b in block_keys)
     l = [str(file_tag),block_keys_str,str(public_key)]
@@ -311,7 +311,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     b_len = int(li[0])
     b_int = int(li[1])
     cipher = b_int.to_bytes(b_len,'big')
-    print(f' received time, time: {datetime.now()}')
+    #print(f' received time, time: {datetime.now()}')
     #val = edge.blocks_to_server_cuckoo_server(file_tag, block_keys, public_key)
     if val != '-1':
         time_dec = rsa_decypt(private_key,cipher)
@@ -322,7 +322,7 @@ def subs_upload(file_name, file_tag, public_key, private_key):
         x = send_text(command,arg)
         #x = edge.check_time_hash_server(file_tag, public_key, time_dec)
     #'''
-    print(f' Subs Upload done, time: {datetime.now()}')
+    #print(f' Subs Upload done, time: {datetime.now()}')
 
 def check_for_update(file_tag, display='Y'):
     command = 'check_for_update'
