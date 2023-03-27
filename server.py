@@ -82,27 +82,36 @@ def check_time_hash(file_tag,public_key, time_val):
             print('User Added')
     return '1'
 
-def save_block_values(block_tag, file_tag):
-    db.save_block_values(block_tag, file_tag)
-    
+def save_block_exists_if_not_exists(block_tag_list, file_tag):
+    block_tags = block_tag_list.split('/')
+    saved_tags_tuple = db.check_block_exists(block_tags,file_tag)
+    saved_block_tags = []
+    for tags in saved_tags_tuple:
+        saved_block_tags.append(tags[0])
+    names_list =[]
+    for i in range(len(block_tags)):
+        if block_tags[i] in saved_block_tags:
+            name = f'block{i+1}.bin'
+            names_list.append(name)
+    names_list_str = '*'.join(names_list)
+    return names_list_str
 
-def check_block_exists(block_tag):
-    val = db.check_block_exists(block_tag)
-    return val
+
 
 def get_block_values(file_tag):
     tag_list = db.get_block_values(file_tag)
     return tag_list
 
-def get_file_tag_of_block(block_tag):
+def get_file_tag_and_index_of_block(block_tag,file_tag):
     file_tag_of_block = db.get_file_tag_of_block(block_tag)
-    return file_tag_of_block
-
-def get_index_of_block(block_tag,file_tag):
     block_tags_string = get_block_values(file_tag)
     block_tags = block_tags_string.split('/')
     index = block_tags.index(block_tag)
-    return index+1
+    i= index+1
+    tag = file_tag_of_block
+    li = [str(i),str(tag)]
+    li_str = '*'.join(li)
+    return li_str
 
 def check_for_update(file_tag):
     val = db.get_latest_file_tag(file_tag)
