@@ -22,6 +22,7 @@ edge_input_folder_name = 'files/encrypted_blocks_'
 edge_output_folder_name = 'files/edge_encrypted_blocks_'
 edge_down_input_folder_name = 'files/edge_encrypted_blocks_'
 edge_output_down_folder_name = 'files/edge_decrypted_blocks_'
+edge_down_folder_name = 'files/edge_encrypted_down_blocks_'
 
 
 prime2 = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
@@ -220,6 +221,16 @@ def get_folder(count,tag,conn):
         get_file(file_name,conn)
         conn.send('Received File'.encode(FORMAT))
 
+def get_folder_from_server(file_count,server_socket):
+    for i in range(1,file_count):
+        msg_length = server_socket.recv(HEADER).decode(FORMAT)
+        msg_length = int(msg_length)
+        msg = server_socket.recv(msg_length).decode(FORMAT)
+        l = msg.split('-')
+        file_name = l[1]
+        get_file(file_name,server_socket)
+        x = server_socket.send('Received File'.encode(FORMAT))
+
 def send_folder_to_user(file_tag, conn):
     folder_name = edge_output_down_folder_name + str(file_tag)+'/'
     files = os.listdir(folder_name)
@@ -382,53 +393,34 @@ def download_from_edge(file_tag, public_key):
     val = val_str.split('*')
     cipher_2 = val[0]
     cipher_3 = val[1]
-    block_tags = val[2]
     metadata_str  = val[3]
     metadata = metadata_str.split(',')
     _, file_count = metadata
     file_count = file_count[:-1]
-    tag_list_string= block_tags
-    tag_list = tag_list_string.split('/')
-    file_list = []
-    block_name_list=[]
-    input_name =[]
-    for i in range (1,int(file_count)):
-        
-        block_tag = tag_list[i-1]
-        command = 'get_file_tag_of_block'
-        l = [str(block_tag),str(file_tag)]
-        s = '+'.join(l)
-        arg = s
-        list = [command,arg]
-        message = '-'.join(list)
-        value = send_text_server(message)
-        if value != 'Same':
-            li = value.split('*')
-            index = li[0]
-            block_suffix = li[1]
-        else:
-            index = i
-            block_suffix = file_tag
-        block_name = 'block{}.bin'.format(index)
-        if not os.path.exists('files'):
-            os.mkdir('files')
-        edge_down_input_folder_name1 = edge_down_input_folder_name + str(block_suffix)+'/'
-        if not os.path.exists(edge_down_input_folder_name1):
-            os.mkdir(edge_down_input_folder_name1)
-        file_path = edge_down_input_folder_name1+block_name
-        file_list.append(file_path)
-        block_name_list.append(block_name)
-        input_name.append(edge_down_input_folder_name1)
+    file_count = int(file_count)
     
-    #print(f'datas calculated, time: {datetime.now()}')
-    for files in file_list:
-        get_file_from_server(files)
-    
-    #print(f'files received, time: {datetime.now()}')
-    for block_name in block_name_list:
+    edge_down_input_folder_name1 = edge_down_input_folder_name + str(file_tag)+'/'
+    edge_down_folder_name1 = edge_down_folder_name + str(file_tag)+'/'
+    if not os.path.exists(edge_down_input_folder_name1):
+        os.mkdir(edge_down_input_folder_name1)
+    if not os.path.exists(edge_down_folder_name1):
+        os.mkdir(edge_down_folder_name1)
+
+    command = 'download_folder_from_server'
+    arg = str(file_tag)
+    l = [command,arg]
+    l_str = '-'.join(l)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect(SERVER_ADDR)
+    __send_to_server(l_str,server_socket)
+    get_folder_from_server(file_count,server_socket)
+    server_socket.close()
+    print(f'files received, time: {datetime.now()}')
+    files = os.listdir(edge_down_folder_name1)
+    for file in files:
+        print(f'file: {file}')
         edge_output_down_folder_name1 = edge_output_down_folder_name + str(file_tag)+'/'
-        edge_down_input_folder_name1 = input_name[block_name_list.index(block_name)]
-        AES.aes_decrypt_file(edge_key, iv, edge_down_input_folder_name1, edge_output_down_folder_name1,block_name)
+        AES.aes_decrypt_file(edge_key, iv, edge_down_folder_name1, edge_output_down_folder_name1,file)
     
     #print(f'files decrypted, time: {datetime.now()}')
     l = [cipher_2, cipher_3, metadata_str]
