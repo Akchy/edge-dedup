@@ -1,10 +1,14 @@
 import db
+import os
 import random
+import shutil
 import datetime
 from mod.enc.rsa_keys import rsa_encrypt
 from mod.cuckoo import check_cuckoo
-from mod.enc.rsa_keys import generate_keys
 
+
+edge_output_folder_name = 'files/edge_encrypted_blocks_'
+edge_down_folder_name = 'files/edge_encrypted_down_blocks_'
 
 def check_file_tag_exists(file_tag):
     exists = db.check_file_tag(file_tag)
@@ -21,11 +25,47 @@ def upload_to_server(file_tag, public_key, group,cipher_2,cipher_3, block_tags, 
 #     db.update(old_file_tag, new_file_tag, public_key,cipher_2,cipher_3, block_tags,cuckoo_blocks, metadata)
 
 def download_from_server(file_tag, public_key):
-    val = db.get_ciphers(file_tag, str(public_key))
+    val, metadata_str,tag_list_string = db.get_ciphers(file_tag, str(public_key))
     if val == '-1' :
         return '-1' #No Access
+    metadata = metadata_str.split(',')
+    _, file_count = metadata
+    file_count = file_count[:-1]
+
+    tag_list = tag_list_string.split('/')
+
+    move_files_to_folder(file_tag,file_count,tag_list)
     return val
    
+def move_files_to_folder(file_tag,file_count,tag_list):
+
+    dest_folder = edge_down_folder_name + file_tag + '/'
+    if not os.path.exists(dest_folder):
+        os.mkdir(dest_folder)
+
+    for i in range (1,int(file_count)):
+        block_tag = tag_list[i-1]
+        value = get_file_tag_and_index_of_block(block_tag,file_tag)
+        if value != 'Same':
+            li = value.split('*')
+            index = li[0]
+            block_suffix = li[1]
+        else:
+            index = i
+            block_suffix = file_tag
+        block_name = 'block{}.bin'.format(index)
+        if not os.path.exists('files'):
+            os.mkdir('files')
+        edge_output_folder_name1 = edge_output_folder_name + str(block_suffix)+'/'
+        if not os.path.exists(edge_output_folder_name1):
+            os.mkdir(edge_output_folder_name1)
+        file_path = edge_output_folder_name1+block_name
+        shutil.copy(file_path, dest_folder)
+
+
+#TODO: Complete the code
+
+
 def check_access(file_tag, public_key):
     has_access = db.check_access(file_tag,str(public_key)) 
     if has_access:

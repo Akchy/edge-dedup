@@ -245,7 +245,7 @@ def get_ciphers(file_tag, public_key):
         metadata = myresult[3]
         '''
         res_str = '*'.join(myresult)
-        return res_str
+        return res_str, myresult[3],myresult[2]
     else:
         return '-1' #No Access
     

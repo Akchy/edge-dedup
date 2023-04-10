@@ -11,6 +11,7 @@ ADDR = ('', PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
 edge_output_folder_name = 'files/edge_encrypted_blocks_'
+edge_down_folder_name = 'files/edge_encrypted_down_blocks_'
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
@@ -132,7 +133,18 @@ def check_command(argument,arg, conn):
         case 'get_file':
             send_file(arg, conn)
             x = conn.recv(13).decode(FORMAT)
+        case 'download_folder_from_server':
+            send_folder(arg,conn)
     return val
+
+def __send(msg,conn):
+    message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b' ' * (HEADER - len(send_length))
+    #print(f'msg: {msg}')
+    conn.send(send_length)
+    conn.send(message)
 
 def get_large_text(str_len, conn):
     large = ''
@@ -198,6 +210,17 @@ def send_file(filename, file_conn):
         file_conn.send(length_com.encode(FORMAT))
         file_conn.sendall(data)
 
+def send_file1(filename, file_conn):
+    #Send File name
+    __send(f'file_name-{filename}',file_conn)
+    #Send file
+    with open(filename, 'rb') as f:
+        data = f.read()
+        data_len = len(data)
+        __send(f'len-{data_len}',file_conn)
+        file_conn.sendall(data)
+
+
 def get_folder(count,tag,conn):
     if not os.path.exists('files'):
         os.mkdir('files')
@@ -215,6 +238,14 @@ def get_folder(count,tag,conn):
         get_file(file_name,tag,conn)
         conn.send('Received File'.encode(FORMAT))
 
+
+def send_folder(file_tag, conn):
+    folder_name = edge_down_folder_name + str(file_tag)+'/'
+    files = os.listdir(folder_name)
+    for file in files:
+        file_path = folder_name+file
+        send_file1(file_path,conn)
+        x = conn.recv(13).decode(FORMAT)
 
 def start():
     server_socket.listen(100)
