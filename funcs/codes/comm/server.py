@@ -1,10 +1,10 @@
-import db
 import os
-import random
 import shutil
+import random
 import datetime
-from mod.enc.rsa_keys import rsa_encrypt
-from mod.cuckoo import check_cuckoo
+import funcs.db as db
+from funcs.mod.cuckoo import check_cuckoo
+from funcs.mod.enc.rsa_keys import rsa_encrypt
 
 
 edge_output_folder_name = 'files/edge_encrypted_blocks_'
@@ -54,8 +54,8 @@ def move_files_to_folder(file_tag,file_count,tag_list):
             index = i
             block_suffix = file_tag
         block_name = 'block{}.bin'.format(index)
-        if not os.path.exists('files'):
-            os.mkdir('files')
+        if not os.path.exists('funcs/files'):
+            os.mkdir('funcs/files')
         edge_output_folder_name1 = edge_output_folder_name + str(block_suffix)+'/'
         if not os.path.exists(edge_output_folder_name1):
             os.mkdir(edge_output_folder_name1)

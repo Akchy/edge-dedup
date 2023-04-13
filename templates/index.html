@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Encrypted Dedup</title>
+    {{ fontawesome_html() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-VZaFvRJ/ScW8VC/PL+xkLdNT/3OIGMqW3qQK1cO5xMWwZYsjJWCBb8kbARJjTWtPfJvzAvWY78lL+IxZn81CHw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  </head>
+  <body>
+    <h1>Encrypted Dedup</h1>
+    <div id="dropzone">
+      <p>Drag and drop files here to upload</p>
+  </div>
+  
+    <form action="/upload" method="post" enctype="multipart/form-data" id="upload-form" onsubmit="showLoading()">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+      </form>
+      <iframe id="upload-iframe" name="upload-iframe" style="display: none;"></iframe>
+    </div>  
+    <h2>Uploaded Files:</h2>
+    <ul class="file-list">
+      {% for file in files %}
+      <li>
+        <span class="file-name">{{ file }}</span>
+        <a href="{{ url_for('edit', filename=file) }}"
+                onclick="return confirm('Are you sure you want to replace {{ file.filename }} with a new file?');">
+            <i class="fas fa-pencil-alt"></i>
+        </a>
+      </li>
+      {% endfor %}
+      
+    </ul>
+
+    <script>
+      // Get the dropzone element
+      var dropzone = document.getElementById('dropzone');
+  
+      // Add event listeners for drag-and-drop events
+      dropzone.addEventListener('dragenter', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.add('dragover');
+      });
+  
+      dropzone.addEventListener('dragover', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.add('dragover');
+      });
+  
+      dropzone.addEventListener('dragleave', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.remove('dragover');
+      });
+  
+      dropzone.addEventListener('drop', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.remove('dragover');
+  
+          // Get the file data from the drop event
+          var files = event.dataTransfer.files;
+  
+          // Create a FormData object to send the file data
+          var formData = new FormData();
+          formData.append('file', files[0]);
+  
+          // Send an AJAX request to the Flask server to upload the file
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '{{ url_for("upload") }}');
+          xhr.onload = function() {
+              if (xhr.status === 200) {
+                  console.log('File uploaded successfully');
+                  location.reload(true)
+              } else {
+                  console.log('File upload failed');
+              }
+          };
+          xhr.send(formData);
+      });
+  </script>
+  
+  </body>
+</html>

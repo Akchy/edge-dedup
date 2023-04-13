@@ -11,9 +11,10 @@ __pycache__/
 *.so
 
 # mod files
-files/*
-datas/*
-subs_blocks/*
+files/
+datas/
+subs_blocks/
+uploads/
 
 
 # Distribution / packaging

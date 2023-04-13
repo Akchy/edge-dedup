@@ -1,4 +1,4 @@
-from mod.files_to_bin import *
+from funcs.mod.files_to_bin import *
 
 def modulo_hash_file(filepath, modulus):
     file_bin = file_to_binary(filepath)

@@ -1,8 +1,8 @@
 import os
-import server
 import socket 
 import threading
 from datetime import datetime
+import funcs.codes.comm.server as server
 
 HEADER = 64
 PORT = 5050
@@ -10,8 +10,8 @@ SERVER = socket.gethostname()
 ADDR = ('', PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT-OUT"
-edge_output_folder_name = 'files/edge_encrypted_blocks_'
-edge_down_folder_name = 'files/edge_encrypted_down_blocks_'
+edge_output_folder_name = 'funcs/files/edge_encrypted_blocks_'
+edge_down_folder_name = 'funcs/files/edge_encrypted_down_blocks_'
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
@@ -59,7 +59,6 @@ def check_command(argument,arg, conn):
             else:
                 val = '*'.join(str(i) for i in value)
         case 'save_block_exists_if_not_exists':
-            print(f'block checking: {datetime.now()}')
             lists = arg.split('+')
             block_tags_lists = lists[0]
             file_tag = lists[1]
@@ -172,8 +171,8 @@ def send_large_text(text,conn):
 
 def get_file(filename, file_tag, file_conn):
 
-    if not os.path.exists('files'):
-        os.mkdir('files')
+    if not os.path.exists('funcs/files'):
+        os.mkdir('funcs/files')
     edge_output_folder_name1 = edge_output_folder_name + file_tag + '/'
     if not os.path.exists(edge_output_folder_name1):
         os.mkdir(edge_output_folder_name1)
@@ -222,8 +221,8 @@ def send_file1(filename, file_conn):
 
 
 def get_folder(count,tag,conn):
-    if not os.path.exists('files'):
-        os.mkdir('files')
+    if not os.path.exists('funcs/files'):
+        os.mkdir('funcs/files')
     edge_output_folder_name1 = edge_output_folder_name + tag + '/'
     if not os.path.exists(edge_output_folder_name1):
         os.mkdir(edge_output_folder_name1)

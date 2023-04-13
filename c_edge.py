@@ -1,8 +1,8 @@
 import os
 import socket 
 import threading
-import mod.enc.aes as AES
-from mod.modulo_hash import *
+import funcs.mod.enc.aes as AES
+from funcs.mod.modulo_hash import *
 from datetime import datetime
 from Crypto.Random import get_random_bytes
 
@@ -205,8 +205,8 @@ def send_file(filename, file_conn):
         file_conn.sendall(data)
 
 def get_folder(count,tag,conn):
-    if not os.path.exists('files'):
-        os.mkdir('files')
+    if not os.path.exists('funcs/files'):
+        os.mkdir('funcs/files')
     edge_input_folder_name1 = edge_input_folder_name + str(tag)+'/'
     if not os.path.exists(edge_input_folder_name1):
         os.mkdir(edge_input_folder_name1)
@@ -415,10 +415,8 @@ def download_from_edge(file_tag, public_key):
     __send_to_server(l_str,server_socket)
     get_folder_from_server(file_count,server_socket)
     server_socket.close()
-    print(f'files received, time: {datetime.now()}')
     files = os.listdir(edge_down_folder_name1)
     for file in files:
-        print(f'file: {file}')
         edge_output_down_folder_name1 = edge_output_down_folder_name + str(file_tag)+'/'
         AES.aes_decrypt_file(edge_key, iv, edge_down_folder_name1, edge_output_down_folder_name1,file)
     

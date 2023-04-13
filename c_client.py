@@ -2,13 +2,13 @@ import socket
 
 # Here's the code for user
 import rsa
-from mod.enc.aes import *
-from mod.modulo_hash import *
+from funcs.mod.enc.aes import *
+from funcs.mod.modulo_hash import *
 from datetime import datetime
-from mod.enc.sarce import get_rce_key
-from mod.divide_files import merge_blocks
-from mod.enc.rsa_keys import generate_keys, rsa_decypt
-from mod.divide_files import divide_file_by_size
+from funcs.mod.enc.sarce import get_rce_key
+from funcs.mod.divide_files import merge_blocks
+from funcs.mod.enc.rsa_keys import generate_keys, rsa_decypt
+from funcs.mod.divide_files import divide_file_by_size
 
 HEADER = 64
 PORT = 5050
@@ -23,16 +23,16 @@ client.connect(ADDR)
 prime1 = 85317060646768443274134832250229019514319591632920326205376943415602602947019
 prime2 = 154813591145766135381307408100320581872727279802381926251921153367959654726445983463789452039725321237307989748816194466520946981165617567414284940369508252295621408568741594522799840574828305266316028435844847717554430653505159371815836799626994815914862273363768236564919004629159198309175554423687355013493
 temp = 11037229919296391044771832604060314898870002775346764076594975490923595002795272111869578867022764684137991653602919487206273710450289426260391664067192117
-user_input_folder_name = 'files/blocks/'
-user_output_folder_name = 'files/encrypted_blocks_'
-user_down_input_folder_name = 'files/edge_decrypted_blocks_'
-user_down_output_folder_name = 'files/decrypted_blocks_'
-user_sub_input_folder_name = 'subs_blocks/'
-file_size = 1024*8
+user_input_folder_name = 'funcs/files/blocks/'
+user_output_folder_name = 'funcs/files/encrypted_blocks_'
+user_down_input_folder_name = 'funcs/files/edge_decrypted_blocks_'
+user_down_output_folder_name = 'funcs/files/decrypted_blocks_'
+user_sub_input_folder_name = 'funcs/files/subs_blocks/'
+file_size = 1024
 
 iv = b"\x80\xea\xacbU\x01\x0e\tG\\4\xefQ'\x07\x92"
-if not os.path.exists('files'):
-        os.mkdir('files')
+if not os.path.exists('funcs/files'):
+        os.mkdir('funcs/files')
 
 def __send(msg):
     message = msg.encode(FORMAT)
@@ -147,7 +147,8 @@ def get_folder_from_edge(file_count):
 
 def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_file_tag=''):
     #print(f'Key from edge, time: {datetime.now()}')
-    file_tag = get_file_tag(file_name)
+    file_path = 'funcs/'+file_name
+    file_tag = get_file_tag(file_path)
     #print(f'file_tag, time: {datetime.now()}')
     # RCE Key Generation
     command = 'get_edge_rce_key'
@@ -172,7 +173,7 @@ def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_f
         subs_upload(file_name, file_tag,public_key,private_key)
     else:
         #print('New Upload')
-        file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key)
+        file_count,cipher_2,cipher_3, cuckoo_blocks=encrypt_blocks(file_path, file_tag, rce_key, public_key, private_key)
         #print(f'Encryption Done, time: {datetime.now()}')
         metadata = [file_name,file_count]
         cipher_2_list= '/'.join(str(c) for c in cipher_2)
@@ -185,6 +186,10 @@ def user_upload(file_name,public_key, private_key,group='N',is_update='N', old_f
         #edge.upload_to_edge(file_tag, str(public_key), group, file_count,cipher_2_list,str(cipher_3), cuckoo_blocks_list, str(metadata), is_update, old_file_tag)
         
         print('User: File Uploaded\nPlease save the file tag mentioned below: \nFile Tag: {}'.format(file_tag))
+    
+    __send(DISCONNECT_MESSAGE)
+    client.close()
+
 
 def get_file_tag(file_name):
     return modulo_hash_file(file_name,prime1)
@@ -213,7 +218,7 @@ def encrypt_blocks(file_name, file_tag, rce_key, public_key, private_key):
     cipher_3 = int_rce_key ^ prime2
     
     # Saving User's Public and Private keys in a file.
-    with open('files/rsa.txt','w+') as file:
+    with open('funcs/files/rsa.txt','w+') as file:
         file.write('\n\npublic= {} \nprivate= {}'.format(public_key,private_key))
     return file_count, cipher_2, cipher_3, cuckoo_blocks
 
@@ -266,11 +271,14 @@ def user_download(file_tag,public_key):
         file_name = 'block{}.bin'.format(i)
         user_down_output_folder_name1 = user_down_output_folder_name + str(tag)+'/'
         aes_decrypt_file(block_key, iv, user_down_input_folder_name1, user_down_output_folder_name1,file_name)
-    save_file_name = 'downloaded_'+save_file_name
+    save_file_name = 'funcs/downloaded_'+save_file_name
     merge_blocks(user_down_output_folder_name1,save_file_name)
     print('User: File downloaded and saved under the name: ',save_file_name)
+    __send(DISCONNECT_MESSAGE)
+    client.close()
 
 def subs_upload(file_name, file_tag, public_key, private_key):
+    file_path = 'funcs/'+file_name
     #print(f'Subs started, time: {datetime.now()}')
     command = 'check_access'
     l = [str(file_tag),str(public_key)]
@@ -288,17 +296,17 @@ def subs_upload(file_name, file_tag, public_key, private_key):
     print('User: Different Person')
     #'''
 
-    if not os.path.exists('subs_blocks'):
-        os.mkdir('subs_blocks')
+    if not os.path.exists(user_sub_input_folder_name):
+        os.mkdir(user_sub_input_folder_name)
     block_list = value
-    _=divide_file_by_size(file_name, file_size, user_sub_input_folder_name)
+    _=divide_file_by_size(file_path, file_size, user_sub_input_folder_name)
 
     #print(f'files divides, time: {datetime.now()}')
     block_keys = []
     for i in block_list:
-        file_name = 'block{}.bin'.format(i)
-        file_path = user_sub_input_folder_name+file_name
-        mod = modulo_hash_file(file_path,prime2)
+        block_name = 'block{}.bin'.format(i)
+        block_path = user_sub_input_folder_name+block_name
+        mod = modulo_hash_file(block_path,prime2)
         block_keys.append(mod)
     #print(f' block keys done, time: {datetime.now()}')
     command = 'blocks_to_server_cuckoo'
@@ -339,6 +347,9 @@ def check_for_update(file_tag, display='Y'):
         print('User: A new version of the file is available and the file tag is mentioned below: \nNew File Tag: {}'.format(val))
         print('\nUser: Please use the below mentioned file tag while updating: \nOld File Tag: {}\n'.format(file_tag))
 
+    __send(DISCONNECT_MESSAGE)
+    client.close()
+
 def add_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
     command = 'add_user'
@@ -357,6 +368,9 @@ def add_user(file_name, public_key, new_public_key):
         print('User: User is not an Admin')
     elif val == '-4':
         print('User: New User Already Present')
+    
+    __send(DISCONNECT_MESSAGE)
+    client.close()
 
 def delete_user(file_name, public_key, new_public_key):
     file_tag = get_file_tag(file_name)
@@ -376,6 +390,9 @@ def delete_user(file_name, public_key, new_public_key):
         print('User: User is not an Admin')
     elif val == '-4':
         print('User: New User Already Deleted')
+
+    __send(DISCONNECT_MESSAGE)
+    client.close()
     
 
 #public_key, private_key = generate_keys()
@@ -384,19 +401,20 @@ private_key = rsa.PrivateKey(161975013625261833297723589640652101080754551761278
 new_public_key= rsa.PublicKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537) 
 new_private_key= rsa.PrivateKey(1512831018278585743841472696740207789602100915654757895338084051019981320336842454667198778630112787313780098742495247885756974310935334921414696040923269923378353222183085473799462635687460593000951865522396872717298868278903520291825340358641335850759829062254526135031854570310876145080522323534956208489004610857, 65537, 1296122020314086865907118886266779486066929586540412302445001775801775045479551505059867620142853699358857420453978144766122470521761876810084589895631526384627894119493557656871268193012699663523477134432434019931649558069860282557718131802344357259907672054159038277642546515992580505422152487417519344873374751953, 210107718007673478827841822507130275005760128893000947010995116566391878871457378432327937171500421528217531480977310848366445709997193856230927826781335188364258139741, 7200263905694957246674054940590485390626170401196093626142230160532627252925841182458429597636885243354582825680728031714977538875796565460079938877)
 
-file_name = 'debian.iso'
+file_name = 'test.txt'
 group = 'Y'
-update= 'N'
+update= 'Y'
 old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
 file_tag = '62083022736372406286878543231345933678695456481173225593791197450501253020534'
 new_tag = '43439016252719349001350333880316096674018789395488878928736197793747174455563'
-user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
+user_upload(file_name, new_public_key, new_private_key,group=group,is_update=update,old_file_tag=old_tag)
 
-#user_download(new_tag, public_key)
+#user_download(old_tag, public_key)
 #user_update('test.txt', public_key, '79289504320816749656312002797686303750053270932755277852798226741834612071265')
 #check_for_update(old_tag,public_key)
 
 #delete_user(file_name, public_key, new_public_key)
 #add_user(file_name, public_key, new_public_key)
-__send(DISCONNECT_MESSAGE)
-client.close()
+
+#__send(DISCONNECT_MESSAGE)
+#client.close()

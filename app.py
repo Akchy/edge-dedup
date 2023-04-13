@@ -1,0 +1,56 @@
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_fontawesome import FontAwesome
+import os
+import rsa
+import c_client
+
+app = Flask(__name__)
+fa = FontAwesome(app)
+
+if not os.path.exists('uploads'):
+        os.mkdir('uploads')
+
+@app.route("/")
+def index():
+    # get list of uploaded files
+    files = os.listdir("uploads")
+    # render template with list of files
+    return render_template("index.html", files=files)
+
+@app.route('/edit/<filename>', methods=['GET', 'POST'])
+def edit(filename):
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    if request.method == 'POST':
+        # Delete the old file
+        os.remove(filepath)
+        
+        # Save the new file
+        f = request.files['file']
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], f.filename))
+        flash('File successfully edited')
+        return redirect(url_for('index'))
+
+    return render_template('edit.html', filename=filename)
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    # handle file upload
+    file = request.files["file"]
+    filename = file.filename
+    file.save(os.path.join("uploads", filename))
+    group = 'Y'
+    update= 'N'
+    old_tag = '79289504320816749656312002797686303750053270932755277852798226741834612071265'
+    # redirect to home page
+    public_key = rsa.PublicKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537)
+    private_key = rsa.PrivateKey(1619750136252618332977235896406521010807545517612785245212451483502410574525825995344209832503413765595553218797211650165668796624501025356465915373792919645936327492224490288645578575138223278878781813799762886037191557934865815503565013998614220110374116025960745945204394432266977381294688936349494087274295987083, 65537, 1030691669318750359951625319862690475818347967117902605872939930367594308397554381247838360695330336552349907433970389960768509782742058080789448232712325826281082261178632239073798253718751096103441456539354111286400036129262946954889075051792123457429342509369899192140299157753644374884936706624123295044143642185, 144316483646245528065267241335886041264166327522302219260632995815227677664448673850105699878958127212618068955859752072987245918861275831575505446408281521548720709797, 11223597577550573967916132102918873794347730871873978637357031959131200754447345444825878496219616432817134464015955214999041127472681083882349565039)
+    file_name = 'uploads/'+filename
+    c_client.user_upload(file_name, public_key, private_key,group=group,is_update=update,old_file_tag=old_tag)
+
+    return redirect(url_for("index"))
+
+if __name__ == "__main__":
+    app.secret_key = 'super secret key'
+    app.config['UPLOAD_FOLDER'] = 'uploads'
+    app.run(debug=True,host='127.0.0.1', port=8080)

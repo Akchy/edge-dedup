@@ -1,6 +1,6 @@
 # Importing module
 import datetime
-import db_connect
+import funcs.db_connect as db_connect
 
 server_db = db_connect.db
 cursor1 = server_db.cursor()
